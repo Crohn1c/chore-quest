@@ -1566,8 +1566,40 @@ function showToast(msg) {
   setTimeout(() => t.classList.remove('show'), 2200);
 }
 
+// ---- URL HASH ERROR HANDLING ----
+function checkUrlHashErrors() {
+  const hash = window.location.hash;
+  if (!hash) return;
+  const params = new URLSearchParams(hash.replace('#', ''));
+  const error = params.get('error');
+  const errorCode = params.get('error_code');
+  const errorDesc = params.get('error_description');
+  if (!error) return;
+
+  // Clean the URL so it doesn't persist on refresh
+  window.history.replaceState(null, '', window.location.pathname);
+
+  let userMessage = 'Something went wrong. Please try again.';
+  if (errorCode === 'otp_expired') {
+    userMessage = 'That confirmation link has expired. Please sign up again to receive a new one.';
+  } else if (errorCode === 'access_denied') {
+    userMessage = 'Access denied. The link may have already been used or is invalid.';
+  } else if (errorDesc) {
+    userMessage = decodeURIComponent(errorDesc.replace(/\+/g, ' '));
+  }
+
+  // Show the auth screen with the error visible
+  showAuthScreen();
+  const errEl = document.getElementById('loginError');
+  if (errEl) {
+    errEl.style.color = 'var(--orange)';
+    errEl.textContent = userMessage;
+  }
+}
+
 // ---- INIT ----
 async function init() {
+  checkUrlHashErrors();
   const { data: { session } } = await sb.auth.getSession();
   if (session) {
     currentUser = session.user;
