@@ -7,11 +7,11 @@
 <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #0a0c10;
-    --bg2: #0f1117;
-    --bg3: #151820;
-    --border: #1e2330;
-    --border2: #252c3d;
+    --bg: #0e1018;
+    --bg2: #141720;
+    --bg3: #1a1e2a;
+    --border: #252b3b;
+    --border2: #2e3650;
     --gold: #f0c040;
     --gold2: #ffd96e;
     --purple: #a855f7;
@@ -23,7 +23,7 @@
     --red: #ef4444;
     --text: #e2e8f0;
     --text2: #94a3b8;
-    --text3: #475569;
+    --text3: #566070;
     --common: #94a3b8;
     --uncommon: #22c55e;
     --rare: #3b82f6;
@@ -47,8 +47,8 @@
     position: fixed;
     inset: 0;
     background-image:
-      linear-gradient(rgba(30,35,48,0.4) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(30,35,48,0.4) 1px, transparent 1px);
+      linear-gradient(rgba(37,43,59,0.35) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(37,43,59,0.35) 1px, transparent 1px);
     background-size: 40px 40px;
     pointer-events: none;
     z-index: 0;
@@ -94,14 +94,14 @@
   }
 
   .points-display {
-    background: linear-gradient(135deg, #1a1f2e, #0f1117);
+    background: linear-gradient(135deg, #1e2338, #141720);
     border: 1px solid var(--gold);
     border-radius: 8px;
     padding: 8px 16px;
     display: flex;
     align-items: center;
     gap: 8px;
-    box-shadow: 0 0 12px rgba(240,192,64,0.15), inset 0 0 20px rgba(240,192,64,0.03);
+    box-shadow: 0 0 12px rgba(240,192,64,0.12), inset 0 0 20px rgba(240,192,64,0.03);
   }
 
   .points-icon { font-size: 1.2rem; }
@@ -127,11 +127,6 @@
     display: grid;
     grid-template-columns: 1fr 340px;
     gap: 20px;
-  }
-
-  @media (max-width: 768px) {
-    .main-grid { grid-template-columns: 1fr; }
-    header { flex-direction: column; gap: 12px; align-items: flex-start; }
   }
 
   /* Panel base */
@@ -188,7 +183,7 @@
     overflow: hidden;
   }
 
-  .chore-item:hover { border-color: var(--border2); background: #1a1f2e; }
+  .chore-item:hover { border-color: var(--border2); background: #202636; }
 
   .chore-item.completed {
     opacity: 0.5;
@@ -214,7 +209,7 @@
     color: white;
   }
 
-  .chore-info { flex: 1; }
+  .chore-info { flex: 1; min-width: 0; }
   .chore-name { font-size: 1rem; font-weight: 600; color: var(--text); }
   .chore-meta { font-size: 0.75rem; color: var(--text3); margin-top: 2px; }
 
@@ -579,15 +574,94 @@
     background-clip: text;
     animation: shimmer 2s linear infinite;
   }
+
+  /* ---- MOBILE ---- */
+  @media (max-width: 640px) {
+    .app { padding: 12px 12px 80px; }
+
+    /* Header: logo + HUD in one compact row */
+    header {
+      flex-direction: row;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+      padding-bottom: 14px;
+    }
+
+    header > div:first-child { flex: 1; min-width: 0; }
+
+    .logo { font-size: 1.1rem; letter-spacing: 1px; }
+
+    .week-label {
+      font-size: 0.6rem;
+      letter-spacing: 1px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* HUD: tighten up */
+    .hud { gap: 8px; }
+
+    .points-display { padding: 6px 10px; gap: 6px; }
+    .points-icon { font-size: 1rem; }
+    .points-value { font-size: 1.1rem; min-width: 28px; }
+    .points-label { display: none; }
+
+    /* Email address: hide on very small screens */
+    #userEmail { display: none; }
+
+    /* Main grid: single column */
+    .main-grid { grid-template-columns: 1fr; gap: 12px; }
+
+    /* Panels: tighter padding */
+    .panel { padding: 14px 12px; border-radius: 10px; }
+
+    /* Chore rows: larger tap target, tighter text */
+    .chore-item { padding: 11px 10px; gap: 10px; }
+    .chore-name { font-size: 0.95rem; }
+    .chore-meta { font-size: 0.7rem; }
+    .chore-checkbox { width: 26px; height: 26px; }
+    .chore-points { font-size: 0.8rem; padding: 2px 8px; }
+
+    /* Progress bar section */
+    .week-progress { padding: 10px 12px; margin-bottom: 12px; }
+
+    /* Gacha: roll buttons side by side, larger */
+    .spend-options { gap: 6px; }
+    .spend-btn { padding: 14px 6px; }
+    .spend-btn .cost { font-size: 1.2rem; }
+    .spend-btn .tier { font-size: 0.6rem; }
+
+    /* Loot box: shorter on mobile */
+    .loot-box-area { min-height: 140px; padding: 16px; }
+
+    /* History: slightly taller scrollable area */
+    .history-list { max-height: 180px; }
+
+    /* Add task form: stack rows vertically */
+    .form-row { flex-direction: column; gap: 6px; }
+    .add-btn { width: 100%; padding: 9px; }
+
+    /* Toast: wider on mobile */
+    .toast { width: calc(100% - 32px); text-align: center; white-space: normal; bottom: 16px; }
+  }
+
+  /* Tablet: keep side-by-side but tighter sidebar */
+  @media (min-width: 641px) and (max-width: 900px) {
+    .main-grid { grid-template-columns: 1fr 280px; }
+    .logo { font-size: 1.3rem; }
+  }
 </style>
 </head>
 <body>
 
 <!-- Auth overlay -->
-<div id="authOverlay" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:1000;align-items:center;justify-content:center;padding:16px;">
+<div id="authOverlay" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:1000;align-items:flex-start;justify-content:center;padding:20px 16px;overflow-y:auto;">
 
   <!-- LOGIN PANEL -->
-  <div id="loginPanel" style="background:var(--bg2);border:1px solid var(--border2);border-radius:16px;padding:40px 36px;width:100%;max-width:400px;">
+  <div id="loginPanel" style="background:var(--bg2);border:1px solid var(--border2);border-radius:16px;padding:40px 36px;width:100%;max-width:400px;margin:auto;">
     <div style="font-family:'Cinzel Decorative',serif;font-size:1.3rem;font-weight:900;background:linear-gradient(135deg,var(--gold),var(--gold2),var(--orange));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-align:center;margin-bottom:6px;">⚔ ChoreQuest</div>
     <div style="text-align:center;font-size:0.75rem;color:var(--text3);letter-spacing:2px;text-transform:uppercase;margin-bottom:28px;">Sign in to your quest</div>
     <div style="display:flex;flex-direction:column;gap:12px;">
@@ -609,7 +683,7 @@
   </div>
 
   <!-- SIGNUP PANEL -->
-  <div id="signupPanel" style="display:none;background:var(--bg2);border:1px solid var(--border2);border-radius:16px;padding:40px 36px;width:100%;max-width:400px;">
+  <div id="signupPanel" style="display:none;background:var(--bg2);border:1px solid var(--border2);border-radius:16px;padding:40px 36px;width:100%;max-width:400px;margin:auto;">
     <button onclick="showLoginPanel()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:0.8rem;font-family:'Rajdhani',sans-serif;display:flex;align-items:center;gap:4px;margin-bottom:20px;padding:0;">← Back to sign in</button>
     <div style="font-family:'Cinzel Decorative',serif;font-size:1.1rem;font-weight:900;background:linear-gradient(135deg,var(--gold),var(--gold2),var(--orange));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:4px;">Create Account</div>
     <div style="font-size:0.75rem;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:24px;">Join the quest</div>
@@ -643,7 +717,7 @@
   </div>
 
   <!-- FORGOT PASSWORD PANEL -->
-  <div id="forgotPanel" style="display:none;background:var(--bg2);border:1px solid var(--border2);border-radius:16px;padding:40px 36px;width:100%;max-width:400px;">
+  <div id="forgotPanel" style="display:none;background:var(--bg2);border:1px solid var(--border2);border-radius:16px;padding:40px 36px;width:100%;max-width:400px;margin:auto;">
     <button onclick="showLoginPanel()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:0.8rem;font-family:'Rajdhani',sans-serif;display:flex;align-items:center;gap:4px;margin-bottom:20px;padding:0;">← Back to sign in</button>
     <div style="font-family:'Cinzel Decorative',serif;font-size:1.1rem;font-weight:900;background:linear-gradient(135deg,var(--gold),var(--gold2),var(--orange));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:4px;">Reset Password</div>
     <div style="font-size:0.75rem;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:24px;">We'll send you a reset link</div>
@@ -659,7 +733,7 @@
   </div>
 
   <!-- RESET PASSWORD PANEL (reached via email link) -->
-  <div id="resetPanel" style="display:none;background:var(--bg2);border:1px solid var(--border2);border-radius:16px;padding:40px 36px;width:100%;max-width:400px;">
+  <div id="resetPanel" style="display:none;background:var(--bg2);border:1px solid var(--border2);border-radius:16px;padding:40px 36px;width:100%;max-width:400px;margin:auto;">
     <div style="font-family:'Cinzel Decorative',serif;font-size:1.1rem;font-weight:900;background:linear-gradient(135deg,var(--gold),var(--gold2),var(--orange));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:4px;">New Password</div>
     <div style="font-size:0.75rem;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:24px;">Choose a strong password</div>
     <div style="display:flex;flex-direction:column;gap:12px;">
