@@ -1,0 +1,1222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ChoreQuest</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c10;
+    --bg2: #0f1117;
+    --bg3: #151820;
+    --border: #1e2330;
+    --border2: #252c3d;
+    --gold: #f0c040;
+    --gold2: #ffd96e;
+    --purple: #a855f7;
+    --purple2: #c084fc;
+    --blue: #3b82f6;
+    --cyan: #22d3ee;
+    --green: #22c55e;
+    --orange: #f97316;
+    --red: #ef4444;
+    --text: #e2e8f0;
+    --text2: #94a3b8;
+    --text3: #475569;
+    --common: #94a3b8;
+    --uncommon: #22c55e;
+    --rare: #3b82f6;
+    --epic: #a855f7;
+    --legendary: #f0c040;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Rajdhani', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Animated background grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(30,35,48,0.4) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(30,35,48,0.4) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 24px 16px; }
+
+  /* Header */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 28px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border2);
+  }
+
+  .logo {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 1.6rem;
+    font-weight: 900;
+    background: linear-gradient(135deg, var(--gold), var(--gold2), var(--orange));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: 2px;
+    text-shadow: none;
+  }
+
+  .week-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+  }
+
+  /* Points HUD */
+  .hud {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+
+  .points-display {
+    background: linear-gradient(135deg, #1a1f2e, #0f1117);
+    border: 1px solid var(--gold);
+    border-radius: 8px;
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 0 12px rgba(240,192,64,0.15), inset 0 0 20px rgba(240,192,64,0.03);
+  }
+
+  .points-icon { font-size: 1.2rem; }
+
+  .points-value {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 1.4rem;
+    color: var(--gold);
+    font-weight: 700;
+    min-width: 40px;
+    transition: all 0.3s;
+  }
+
+  .points-label {
+    font-size: 0.7rem;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  /* Main grid */
+  .main-grid {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 20px;
+  }
+
+  @media (max-width: 768px) {
+    .main-grid { grid-template-columns: 1fr; }
+    header { flex-direction: column; gap: 12px; align-items: flex-start; }
+  }
+
+  /* Panel base */
+  .panel {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .panel::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--border2), transparent);
+  }
+
+  .panel-title {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 0.75rem;
+    letter-spacing: 3px;
+    color: var(--text3);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .panel-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* Chore list */
+  .chore-list { display: flex; flex-direction: column; gap: 8px; }
+
+  .chore-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .chore-item:hover { border-color: var(--border2); background: #1a1f2e; }
+
+  .chore-item.completed {
+    opacity: 0.5;
+    border-color: var(--green);
+    background: rgba(34,197,94,0.04);
+  }
+
+  .chore-item.completed .chore-name { text-decoration: line-through; color: var(--text3); }
+
+  .chore-checkbox {
+    width: 22px; height: 22px;
+    border: 2px solid var(--border2);
+    border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.2s;
+    font-size: 0.8rem;
+  }
+
+  .chore-item.completed .chore-checkbox {
+    background: var(--green);
+    border-color: var(--green);
+    color: white;
+  }
+
+  .chore-info { flex: 1; }
+  .chore-name { font-size: 1rem; font-weight: 600; color: var(--text); }
+  .chore-meta { font-size: 0.75rem; color: var(--text3); margin-top: 2px; }
+
+  .chore-points {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.9rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 20px;
+    border: 1px solid;
+    flex-shrink: 0;
+  }
+
+  .diff-easy { color: var(--uncommon); border-color: rgba(34,197,94,0.3); background: rgba(34,197,94,0.08); }
+  .diff-medium { color: var(--blue); border-color: rgba(59,130,246,0.3); background: rgba(59,130,246,0.08); }
+  .diff-hard { color: var(--purple); border-color: rgba(168,85,247,0.3); background: rgba(168,85,247,0.08); }
+
+  .day-badges {
+    display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap;
+  }
+
+  .day-badge {
+    font-size: 0.6rem;
+    padding: 1px 6px;
+    border-radius: 3px;
+    background: var(--border);
+    color: var(--text3);
+    font-family: 'Share Tech Mono', monospace;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.15s;
+  }
+
+  .day-badge.active { background: rgba(59,130,246,0.2); color: var(--blue); border-color: rgba(59,130,246,0.4); }
+  .day-badge.done { background: rgba(34,197,94,0.15); color: var(--green); border-color: rgba(34,197,94,0.3); }
+
+  /* Weekly progress bar */
+  .week-progress {
+    margin-bottom: 16px;
+    padding: 14px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+
+  .progress-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 8px;
+    font-size: 0.8rem; color: var(--text2);
+  }
+
+  .progress-bar {
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--blue), var(--cyan));
+    border-radius: 3px;
+    transition: width 0.5s cubic-bezier(0.34,1.56,0.64,1);
+    box-shadow: 0 0 8px rgba(34,211,238,0.4);
+  }
+
+  /* Right panel - gacha */
+  .gacha-panel { display: flex; flex-direction: column; gap: 16px; }
+
+  /* Spend options */
+  .spend-options { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+
+  .spend-btn {
+    display: flex; flex-direction: column; align-items: center;
+    padding: 12px 8px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'Rajdhani', sans-serif;
+    color: var(--text);
+    gap: 4px;
+  }
+
+  .spend-btn:hover:not(:disabled) { transform: translateY(-2px); }
+  .spend-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  .spend-btn .cost {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 1.1rem;
+    font-weight: 700;
+  }
+
+  .spend-btn .tier { font-size: 0.65rem; letter-spacing: 1px; text-transform: uppercase; color: var(--text3); }
+
+  .spend-btn.tier-1 { border-color: rgba(148,163,184,0.3); }
+  .spend-btn.tier-1:hover:not(:disabled) { border-color: var(--common); box-shadow: 0 0 12px rgba(148,163,184,0.15); }
+  .spend-btn.tier-1 .cost { color: var(--common); }
+
+  .spend-btn.tier-2 { border-color: rgba(168,85,247,0.3); }
+  .spend-btn.tier-2:hover:not(:disabled) { border-color: var(--epic); box-shadow: 0 0 12px rgba(168,85,247,0.2); }
+  .spend-btn.tier-2 .cost { color: var(--epic); }
+
+  .spend-btn.tier-3 { border-color: rgba(240,192,64,0.3); }
+  .spend-btn.tier-3:hover:not(:disabled) { border-color: var(--legendary); box-shadow: 0 0 12px rgba(240,192,64,0.25); }
+  .spend-btn.tier-3 .cost { color: var(--legendary); }
+
+  /* Loot box display */
+  .loot-box-area {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    min-height: 180px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .loot-idle { color: var(--text3); font-size: 0.85rem; }
+  .loot-idle .big-icon { font-size: 3rem; margin-bottom: 8px; display: block; opacity: 0.3; }
+
+  /* Rarity glow overlay */
+  .rarity-glow {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s;
+    border-radius: 10px;
+  }
+
+  .rarity-common .rarity-glow { background: radial-gradient(ellipse at 50% 50%, rgba(148,163,184,0.12), transparent 70%); }
+  .rarity-uncommon .rarity-glow { background: radial-gradient(ellipse at 50% 50%, rgba(34,197,94,0.15), transparent 70%); }
+  .rarity-rare .rarity-glow { background: radial-gradient(ellipse at 50% 50%, rgba(59,130,246,0.18), transparent 70%); }
+  .rarity-epic .rarity-glow { background: radial-gradient(ellipse at 50% 50%, rgba(168,85,247,0.22), transparent 70%); }
+  .rarity-legendary .rarity-glow { background: radial-gradient(ellipse at 50% 50%, rgba(240,192,64,0.25), transparent 70%); }
+
+  .loot-box-area.revealed .rarity-glow { opacity: 1; }
+
+  .reward-icon { font-size: 2.8rem; margin-bottom: 8px; display: block; }
+  .reward-rarity {
+    font-size: 0.65rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+
+  .rarity-common .reward-rarity { color: var(--common); }
+  .rarity-uncommon .reward-rarity { color: var(--uncommon); }
+  .rarity-rare .reward-rarity { color: var(--rare); }
+  .rarity-epic .reward-rarity { color: var(--epic); }
+  .rarity-legendary .reward-rarity { color: var(--legendary); }
+
+  .reward-name { font-size: 1.05rem; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+  .reward-desc { font-size: 0.75rem; color: var(--text2); }
+
+  /* Rolling animation */
+  .rolling-text {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--cyan);
+    letter-spacing: 2px;
+    animation: blink 0.5s infinite;
+  }
+
+  @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+  .roll-particles {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+  }
+
+  .particle {
+    position: absolute;
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    animation: particleFly 0.8s ease-out forwards;
+  }
+
+  @keyframes particleFly {
+    0% { transform: translate(0,0) scale(1); opacity: 1; }
+    100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
+  }
+
+  /* Reward history */
+  .history-list { display: flex; flex-direction: column; gap: 6px; max-height: 160px; overflow-y: auto; }
+
+  .history-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 10px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 0.8rem;
+  }
+
+  .history-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .history-name { flex: 1; color: var(--text2); }
+  .history-cost { font-family: 'Share Tech Mono', monospace; font-size: 0.7rem; color: var(--text3); }
+
+  /* Reward management */
+  .manage-section { margin-top: 4px; }
+
+  .manage-toggle {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text3);
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.8rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    transition: all 0.2s;
+    width: 100%;
+  }
+
+  .manage-toggle:hover { border-color: var(--border2); color: var(--text2); }
+
+  .manage-form {
+    display: none;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 10px;
+    padding: 12px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+
+  .manage-form.open { display: flex; }
+
+  .form-row { display: flex; gap: 8px; }
+
+  .form-input, .form-select {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 7px 10px;
+    border-radius: 6px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.85rem;
+    transition: border-color 0.2s;
+    width: 100%;
+  }
+
+  .form-input:focus, .form-select:focus { outline: none; border-color: var(--border2); }
+  .form-select option { background: var(--bg2); }
+
+  .add-btn {
+    background: linear-gradient(135deg, rgba(59,130,246,0.2), rgba(59,130,246,0.1));
+    border: 1px solid rgba(59,130,246,0.4);
+    color: var(--blue);
+    padding: 7px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    white-space: nowrap;
+    transition: all 0.2s;
+  }
+
+  .add-btn:hover { background: rgba(59,130,246,0.25); }
+
+  .reward-chip {
+    display: flex; align-items: center; gap: 6px;
+    padding: 5px 10px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 0.78rem;
+  }
+
+  .reward-chip-rarity { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .reward-chip-name { flex: 1; color: var(--text2); }
+  .reward-chip-del { background: none; border: none; color: var(--text3); cursor: pointer; font-size: 0.9rem; line-height: 1; padding: 0 2px; }
+  .reward-chip-del:hover { color: var(--red); }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 24px; left: 50%; transform: translateX(-50%) translateY(100px);
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-size: 0.85rem;
+    color: var(--text);
+    transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    z-index: 100;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* Category headers */
+  .category-header {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 0.65rem;
+    letter-spacing: 2px;
+    color: var(--text3);
+    text-transform: uppercase;
+    padding: 10px 4px 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .category-header:first-child { padding-top: 0; }
+  .cat-icon { font-size: 0.9rem; }
+
+  .task-del-btn {
+    background: none;
+    border: none;
+    color: var(--text3);
+    cursor: pointer;
+    font-size: 1.1rem;
+    line-height: 1;
+    padding: 2px 4px;
+    border-radius: 4px;
+    flex-shrink: 0;
+    transition: color 0.15s;
+  }
+  .task-del-btn:hover { color: var(--red); }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  /* Pulse on point gain */
+  @keyframes pointPop { 0%,100% { transform: scale(1); } 50% { transform: scale(1.3); color: var(--gold2); } }
+  .point-pop { animation: pointPop 0.4s ease; }
+
+  @keyframes shimmer {
+    0% { background-position: -200% center; }
+    100% { background-position: 200% center; }
+  }
+
+  .legendary-shimmer {
+    background: linear-gradient(90deg, var(--gold), var(--gold2), var(--orange), var(--gold));
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: shimmer 2s linear infinite;
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header>
+    <div>
+      <div class="logo">⚔ ChoreQuest</div>
+      <div class="week-label" id="weekLabel">Loading week...</div>
+    </div>
+    <div class="hud">
+      <div class="points-display">
+        <span class="points-icon">✦</span>
+        <div>
+          <div class="points-value" id="pointsDisplay">0</div>
+          <div class="points-label">tokens</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="main-grid">
+    <!-- Left: chore tracker -->
+    <div>
+      <div class="panel">
+        <div class="panel-title">Weekly Quests</div>
+
+        <div class="week-progress">
+          <div class="progress-header">
+            <span id="progressLabel">0 / 0 tasks done this week</span>
+            <span id="progressPct" style="font-family:'Share Tech Mono',monospace;font-size:0.75rem;color:var(--text3)">0%</span>
+          </div>
+          <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+        </div>
+
+        <div class="chore-list" id="choreList"></div>
+      </div>
+
+      <!-- Add task panel -->
+      <div class="panel" style="margin-top:16px">
+        <div class="panel-title">Add Task</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <input class="form-input" id="taskName" placeholder="Task name..." />
+          <div class="form-row">
+            <select class="form-select" id="taskDiff">
+              <option value="easy">Easy (+1✦)</option>
+              <option value="medium" selected>Medium (+3✦)</option>
+              <option value="hard">Hard (+5✦)</option>
+            </select>
+            <select class="form-select" id="taskCategory" onchange="toggleCategoryCustom()">
+              <option value="Health">💪 Health</option>
+              <option value="Work">💼 Work</option>
+              <option value="Personal">🧘 Personal</option>
+              <option value="Finance">💳 Finance</option>
+              <option value="Social">👥 Social</option>
+              <option value="Hobby">🎮 Hobby</option>
+              <option value="Other">📌 Other</option>
+              <option value="__custom__">✏️ Custom...</option>
+            </select>
+          </div>
+          <input class="form-input" id="taskCategoryCustom" placeholder="Category name..." style="display:none" />
+          <button class="add-btn" onclick="addCustomTask()" style="width:100%;justify-content:center">+ Add Task</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: gacha -->
+    <div class="gacha-panel">
+      <div class="panel">
+        <div class="panel-title">Loot Roll</div>
+
+        <div class="spend-options">
+          <button class="spend-btn tier-1" onclick="roll(2)" id="rollBtn2">
+            <span class="cost">2✦</span>
+            <span class="tier">Standard</span>
+          </button>
+          <button class="spend-btn tier-2" onclick="roll(5)" id="rollBtn5">
+            <span class="cost">5✦</span>
+            <span class="tier">Epic+</span>
+          </button>
+          <button class="spend-btn tier-3" onclick="roll(10)" id="rollBtn10">
+            <span class="cost">10✦</span>
+            <span class="tier">Legendary+</span>
+          </button>
+        </div>
+
+        <div class="loot-box-area" id="lootBox">
+          <div class="rarity-glow"></div>
+          <div class="loot-idle">
+            <span class="big-icon">🎲</span>
+            Spend tokens to roll a reward
+          </div>
+        </div>
+
+        <div class="manage-section">
+          <button class="manage-toggle" onclick="toggleManage()">⚙ Manage Rewards</button>
+          <div class="manage-form" id="manageForm">
+            <div class="form-row">
+              <input class="form-input" id="rewardName" placeholder="Reward name..." />
+            </div>
+            <div class="form-row">
+              <select class="form-select" id="rewardRarity">
+                <option value="common">Common</option>
+                <option value="uncommon">Uncommon</option>
+                <option value="rare">Rare</option>
+                <option value="epic">Epic</option>
+                <option value="legendary">Legendary</option>
+              </select>
+              <button class="add-btn" onclick="addReward()">Add</button>
+            </div>
+            <div id="rewardChips"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">Recent Drops</div>
+        <div class="history-list" id="historyList">
+          <div style="color:var(--text3);font-size:0.8rem;text-align:center;padding:12px 0">No rolls yet</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ---- STATE ----
+const STORAGE_KEY = 'chorequest_v1';
+
+const RARITY_COLORS = {
+  common: '#94a3b8',
+  uncommon: '#22c55e',
+  rare: '#3b82f6',
+  epic: '#a855f7',
+  legendary: '#f0c040'
+};
+
+// Rarity weights per roll tier
+// [common, uncommon, rare, epic, legendary]
+const TIER_WEIGHTS = {
+  2:  [50, 30, 15,  4,  1],
+  5:  [10, 20, 30, 30, 10],
+  10: [ 2,  5, 15, 38, 40]
+};
+
+const DEFAULT_REWARDS = [
+  { id: 'r1', name: '€5 Dopamine purchase', rarity: 'uncommon', icon: '💸' },
+  { id: 'r2', name: '€10 Dopamine purchase', rarity: 'epic', icon: '💰' },
+  { id: 'r3', name: '€20 Dopamine purchase (Steam/Amazon)', rarity: 'legendary', icon: '👑' },
+  { id: 'r4', name: 'McDonald\'s treat', rarity: 'epic', icon: '🍔' },
+  { id: 'r5', name: 'Skip one chore this week', rarity: 'rare', icon: '🎯' },
+  { id: 'r6', name: 'Extra gaming session', rarity: 'uncommon', icon: '🎮' },
+  { id: 'r7', name: 'Snack of your choice', rarity: 'common', icon: '🍿' },
+  { id: 'r8', name: 'Take-out dinner', rarity: 'rare', icon: '🥡' },
+];
+
+const CHORE_DEFS = [
+  { id: 'dishes', name: 'Load/Unload Dishwasher', diff: 'hard', points: 4, repeatDays: ['Mon','Wed','Fri'], icon: '🍽️' },
+  { id: 'desk', name: 'Clean Desk', diff: 'easy', points: 2, repeatDays: null, icon: '🖥️' },
+  { id: 'laundry', name: 'Put In Laundry', diff: 'medium', points: 3, repeatDays: null, icon: '👕' },
+  { id: 'trash', name: 'Take Out Trash', diff: 'easy', points: 1, repeatDays: null, icon: '🗑️' },
+  { id: 'bedroom', name: 'Clean Bedroom', diff: 'medium', points: 3, repeatDays: null, icon: '🛏️' },
+];
+
+const DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
+function buildCompletions(choreDefs, customTasks, existing) {
+  existing = existing || {};
+  const out = {};
+  choreDefs.forEach(c => {
+    if (c.repeatDays) {
+      c.repeatDays.forEach(d => { const k = c.id+'_'+d; out[k] = existing[k] || false; });
+    } else {
+      out[c.id] = existing[c.id] || false;
+    }
+  });
+  customTasks.forEach(t => { out[t.id] = existing[t.id] || false; });
+  return out;
+}
+
+function defaultState() {
+  const weekStart = getWeekStart();
+  const completions = buildCompletions(CHORE_DEFS, []);
+  return { points: 0, completions, weekStart, rewards: DEFAULT_REWARDS, history: [], customTasks: [] };
+}
+
+function getWeekStart() {
+  const now = new Date();
+  const day = now.getDay();
+  const diff = (day === 0 ? -6 : 1 - day);
+  const mon = new Date(now);
+  mon.setDate(now.getDate() + diff);
+  mon.setHours(0,0,0,0);
+  return mon.toISOString();
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return defaultState();
+    const s = JSON.parse(raw);
+    const savedWeek = new Date(s.weekStart).toISOString().slice(0,10);
+    const currentWeek = new Date(getWeekStart()).toISOString().slice(0,10);
+    s.customTasks = s.customTasks || [];
+    if (savedWeek !== currentWeek) {
+      const fresh = defaultState();
+      fresh.points = s.points || 0;
+      fresh.rewards = s.rewards || DEFAULT_REWARDS;
+      fresh.history = s.history || [];
+      fresh.customTasks = s.customTasks;
+      fresh.completions = buildCompletions(CHORE_DEFS, s.customTasks);
+      return fresh;
+    }
+    // Ensure completions keys are in sync with current task list
+    s.completions = buildCompletions(CHORE_DEFS, s.customTasks, s.completions);
+    return s;
+  } catch(e) { return defaultState(); }
+}
+
+function saveState() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+let state = loadState();
+let rolling = false;
+
+// ---- RENDER ----
+function render() {
+  renderPoints();
+  renderChores();
+  renderProgress();
+  renderRollButtons();
+  renderRewardChips();
+  renderHistory();
+  renderWeekLabel();
+}
+
+function renderWeekLabel() {
+  const ws = new Date(state.weekStart);
+  const we = new Date(ws); we.setDate(ws.getDate() + 6);
+  const fmt = d => d.toLocaleDateString('en-BE', { day:'numeric', month:'short' });
+  document.getElementById('weekLabel').textContent = `Week of ${fmt(ws)} – ${fmt(we)}`;
+}
+
+function renderPoints() {
+  document.getElementById('pointsDisplay').textContent = state.points;
+}
+
+function renderChores() {
+  const list = document.getElementById('choreList');
+  list.innerHTML = '';
+
+  // --- Built-in tasks under "Household" header ---
+  const builtInHeader = document.createElement('div');
+  builtInHeader.className = 'category-header';
+  builtInHeader.innerHTML = '<span class="cat-icon">🏠</span> Household';
+  list.appendChild(builtInHeader);
+
+  CHORE_DEFS.forEach(chore => {
+    if (chore.repeatDays) {
+      chore.repeatDays.forEach(day => {
+        const key = chore.id + '_' + day;
+        const done = state.completions[key] || false;
+        list.appendChild(makeChoreRow(chore, key, done, day, false));
+      });
+    } else {
+      const done = state.completions[chore.id] || false;
+      list.appendChild(makeChoreRow(chore, chore.id, done, null, false));
+    }
+  });
+
+  // --- Custom tasks grouped by category ---
+  if (state.customTasks.length) {
+    const cats = {};
+    state.customTasks.forEach(t => {
+      const cat = t.category || 'Other';
+      if (!cats[cat]) cats[cat] = [];
+      cats[cat].push(t);
+    });
+
+    const catIcons = {
+      'Health': '💪', 'Work': '💼', 'Personal': '🧘', 'Finance': '💳',
+      'Social': '👥', 'Hobby': '🎮', 'Other': '📌'
+    };
+
+    Object.entries(cats).forEach(([cat, tasks]) => {
+      const header = document.createElement('div');
+      header.className = 'category-header';
+      header.innerHTML = `<span class="cat-icon">${catIcons[cat] || '📌'}</span> ${cat}`;
+      list.appendChild(header);
+
+      tasks.forEach(t => {
+        const done = state.completions[t.id] || false;
+        list.appendChild(makeChoreRow(t, t.id, done, null, true));
+      });
+    });
+  }
+}
+
+function makeChoreRow(chore, key, done, dayLabel, deletable) {
+  const item = document.createElement('div');
+  item.className = 'chore-item' + (done ? ' completed' : '');
+
+  const diffClass = { easy: 'diff-easy', medium: 'diff-medium', hard: 'diff-hard' }[chore.diff] || 'diff-easy';
+  const diffLabel = chore.diff ? (chore.diff.charAt(0).toUpperCase() + chore.diff.slice(1) + ' · ') : '';
+  const catLabel = chore.category || '';
+  const metaText = diffLabel + catLabel;
+
+  // Checkbox
+  const cb = document.createElement('div');
+  cb.className = 'chore-checkbox';
+  cb.textContent = done ? '✓' : '';
+  cb.addEventListener('click', function() { toggleChore(key, chore.points); });
+
+  // Info block
+  const info = document.createElement('div');
+  info.className = 'chore-info';
+  info.style.cursor = 'pointer';
+  info.addEventListener('click', function() { toggleChore(key, chore.points); });
+
+  const nameEl = document.createElement('div');
+  nameEl.className = 'chore-name';
+  nameEl.textContent = (chore.icon || '📌') + ' ' + chore.name;
+  if (dayLabel) {
+    const span = document.createElement('span');
+    span.style.cssText = 'font-size:0.75rem;color:var(--text3)';
+    span.textContent = ' (' + dayLabel + ')';
+    nameEl.appendChild(span);
+  }
+  info.appendChild(nameEl);
+
+  if (metaText) {
+    const meta = document.createElement('div');
+    meta.className = 'chore-meta';
+    meta.textContent = metaText;
+    info.appendChild(meta);
+  }
+
+  // Points badge
+  const pts = document.createElement('div');
+  pts.className = 'chore-points ' + diffClass;
+  pts.style.cursor = 'default';
+  pts.textContent = '+' + chore.points + '✦';
+
+  item.appendChild(cb);
+  item.appendChild(info);
+  item.appendChild(pts);
+
+  if (deletable) {
+    const del = document.createElement('button');
+    del.className = 'task-del-btn';
+    del.textContent = '×';
+    del.addEventListener('click', function(e) { e.stopPropagation(); deleteCustomTask(chore.id); });
+    item.appendChild(del);
+  }
+
+  return item;
+}
+
+function renderProgress() {
+  const keys = Object.keys(state.completions);
+  const done = keys.filter(k => state.completions[k]).length;
+  const pct = keys.length ? Math.round(done / keys.length * 100) : 0;
+  document.getElementById('progressLabel').textContent = `${done} / ${keys.length} tasks done this week`;
+  document.getElementById('progressPct').textContent = pct + '%';
+  document.getElementById('progressFill').style.width = pct + '%';
+}
+
+function renderRollButtons() {
+  [2, 5, 10].forEach(cost => {
+    const btn = document.getElementById(`rollBtn${cost}`);
+    btn.disabled = state.points < cost || rolling;
+  });
+}
+
+function renderRewardChips() {
+  const chips = document.getElementById('rewardChips');
+  chips.innerHTML = '';
+  state.rewards.forEach(function(r) {
+    const chip = document.createElement('div');
+    chip.className = 'reward-chip';
+
+    const dot = document.createElement('div');
+    dot.className = 'reward-chip-rarity';
+    dot.style.background = RARITY_COLORS[r.rarity];
+
+    const name = document.createElement('span');
+    name.className = 'reward-chip-name';
+    name.textContent = (r.icon || '🎁') + ' ' + r.name;
+
+    const rar = document.createElement('span');
+    rar.style.cssText = 'font-size:0.65rem;color:var(--text3);margin-right:4px';
+    rar.textContent = r.rarity;
+
+    const del = document.createElement('button');
+    del.className = 'reward-chip-del';
+    del.textContent = '×';
+    del.addEventListener('click', function() { deleteReward(r.id); });
+
+    chip.appendChild(dot);
+    chip.appendChild(name);
+    chip.appendChild(rar);
+    chip.appendChild(del);
+    chips.appendChild(chip);
+  });
+}
+
+function renderHistory() {
+  const list = document.getElementById('historyList');
+  if (!state.history.length) {
+    list.innerHTML = '<div style="color:var(--text3);font-size:0.8rem;text-align:center;padding:12px 0">No rolls yet</div>';
+    return;
+  }
+  list.innerHTML = '';
+  [...state.history].reverse().slice(0, 10).forEach(h => {
+    const item = document.createElement('div');
+    item.className = 'history-item';
+    item.innerHTML = `
+      <div class="history-dot" style="background:${RARITY_COLORS[h.rarity]}"></div>
+      <span class="history-name">${h.icon} ${h.name}</span>
+      <span class="history-cost">-${h.cost}✦</span>
+    `;
+    list.appendChild(item);
+  });
+}
+
+// ---- ACTIONS ----
+function toggleChore(key, points) {
+  const wasDone = state.completions[key];
+  state.completions[key] = !wasDone;
+  if (!wasDone) {
+    state.points += points;
+    showToast(`+${points} tokens earned!`);
+    popPoints();
+  } else {
+    state.points = Math.max(0, state.points - points);
+  }
+  saveState();
+  render();
+}
+
+function popPoints() {
+  const el = document.getElementById('pointsDisplay');
+  el.classList.remove('point-pop');
+  void el.offsetWidth;
+  el.classList.add('point-pop');
+  setTimeout(() => el.classList.remove('point-pop'), 400);
+}
+
+function roll(cost) {
+  if (state.points < cost || rolling) return;
+  rolling = true;
+  state.points -= cost;
+  renderRollButtons();
+  renderPoints();
+
+  const box = document.getElementById('lootBox');
+  box.className = 'loot-box-area';
+  box.innerHTML = '<div class="rarity-glow"></div><div class="rolling-text">ROLLING...</div>';
+
+  let ticks = 0;
+  const maxTicks = 12;
+  const interval = setInterval(() => {
+    ticks++;
+    const preview = getRandomReward(cost);
+    box.innerHTML = `<div class="rarity-glow"></div><div style="opacity:0.4;font-size:0.8rem;color:var(--text3)">${preview.icon} ${preview.name}</div>`;
+    if (ticks >= maxTicks) {
+      clearInterval(interval);
+      revealReward(cost, box);
+    }
+  }, 80);
+}
+
+function revealReward(cost, box) {
+  const reward = getRandomReward(cost);
+  const rarityClass = `rarity-${reward.rarity}`;
+
+  box.className = `loot-box-area revealed ${rarityClass}`;
+
+  const isLegendary = reward.rarity === 'legendary';
+  const nameHtml = isLegendary
+    ? `<div class="reward-name legendary-shimmer">${reward.name}</div>`
+    : `<div class="reward-name">${reward.name}</div>`;
+
+  box.innerHTML = `
+    <div class="rarity-glow"></div>
+    <div class="roll-particles" id="particles"></div>
+    <span class="reward-icon">${reward.icon}</span>
+    <div class="reward-rarity">${reward.rarity}</div>
+    ${nameHtml}
+  `;
+
+  spawnParticles(RARITY_COLORS[reward.rarity]);
+
+  state.history.push({ ...reward, cost, date: new Date().toISOString() });
+  saveState();
+  render();
+  rolling = false;
+  renderRollButtons();
+
+  showToast(`Rolled: ${reward.icon} ${reward.name}`);
+}
+
+function getRandomReward(cost) {
+  const weights = TIER_WEIGHTS[cost];
+  const rarities = ['common','uncommon','rare','epic','legendary'];
+
+  // Roll rarity
+  const total = weights.reduce((a,b) => a+b, 0);
+  let r = Math.random() * total;
+  let rarity = 'common';
+  for (let i = 0; i < weights.length; i++) {
+    r -= weights[i];
+    if (r <= 0) { rarity = rarities[i]; break; }
+  }
+
+  // Pick reward of that rarity, fallback up/down if none
+  const pool = state.rewards.filter(r => r.rarity === rarity);
+  if (pool.length) return pool[Math.floor(Math.random() * pool.length)];
+
+  // Fallback: any reward
+  const any = state.rewards;
+  return any[Math.floor(Math.random() * any.length)] || { name: 'Mystery Reward', icon: '🎁', rarity: 'common' };
+}
+
+function spawnParticles(color) {
+  const container = document.getElementById('particles');
+  if (!container) return;
+  for (let i = 0; i < 16; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.style.cssText = `
+      background: ${color};
+      left: ${40 + Math.random()*20}%;
+      top: ${40 + Math.random()*20}%;
+      --tx: ${(Math.random()-0.5)*120}px;
+      --ty: ${(Math.random()-0.5)*120}px;
+      animation-delay: ${Math.random()*0.2}s;
+    `;
+    container.appendChild(p);
+  }
+}
+
+function addCustomTask() {
+  const name = document.getElementById('taskName').value.trim();
+  const diff = document.getElementById('taskDiff').value;
+  const category = document.getElementById('taskCategory').value;
+  const customCat = document.getElementById('taskCategoryCustom').value.trim();
+  const finalCat = category === '__custom__' ? (customCat || 'Other') : category;
+  if (!name) return;
+
+  const pointMap = { easy: 1, medium: 3, hard: 5 };
+  const iconMap = {
+    'Health': '💪', 'Work': '💼', 'Personal': '🧘', 'Finance': '💳',
+    'Social': '👥', 'Hobby': '🎮', 'Other': '📌'
+  };
+
+  const task = {
+    id: 'custom_' + Date.now(),
+    name,
+    diff,
+    points: pointMap[diff],
+    category: finalCat,
+    icon: iconMap[finalCat] || '📌'
+  };
+
+  state.customTasks.push(task);
+  state.completions[task.id] = false;
+
+  document.getElementById('taskName').value = '';
+  document.getElementById('taskCategoryCustom').value = '';
+  document.getElementById('taskCategoryCustom').style.display = 'none';
+
+  saveState();
+  render();
+  showToast('Task added!');
+}
+
+function deleteCustomTask(id) {
+  // If task was completed, deduct its points first
+  if (state.completions[id]) {
+    const task = state.customTasks.find(t => t.id === id);
+    if (task) state.points = Math.max(0, state.points - task.points);
+  }
+  state.customTasks = state.customTasks.filter(t => t.id !== id);
+  delete state.completions[id];
+  saveState();
+  render();
+  showToast('Task removed');
+}
+
+function toggleCategoryCustom() {
+  const sel = document.getElementById('taskCategory');
+  const customInput = document.getElementById('taskCategoryCustom');
+  customInput.style.display = sel.value === '__custom__' ? 'block' : 'none';
+}
+
+function addReward() {
+  const name = document.getElementById('rewardName').value.trim();
+  const rarity = document.getElementById('rewardRarity').value;
+  if (!name) return;
+
+  const icons = { common:'🎁', uncommon:'✨', rare:'💎', epic:'⚡', legendary:'👑' };
+  state.rewards.push({
+    id: 'r' + Date.now(),
+    name,
+    rarity,
+    icon: icons[rarity]
+  });
+
+  document.getElementById('rewardName').value = '';
+  saveState();
+  renderRewardChips();
+  showToast('Reward added!');
+}
+
+function deleteReward(id) {
+  state.rewards = state.rewards.filter(r => r.id !== id);
+  saveState();
+  renderRewardChips();
+}
+
+function toggleManage() {
+  const form = document.getElementById('manageForm');
+  form.classList.toggle('open');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ---- INIT ----
+render();
+</script>
+</body>
+</html>
