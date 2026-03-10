@@ -1783,6 +1783,27 @@ function checkUrlHashErrors() {
 // ---- INIT ----
 async function init() {
   checkUrlHashErrors();
+
+  // Listen for auth changes — must be registered before getSession
+  sb.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'PASSWORD_RECOVERY') {
+      // User clicked the reset link — show the reset panel, don't boot the app
+      showAuthScreen();
+      showResetPanel();
+    } else if (event === 'SIGNED_IN' && session) {
+      // Only boot the app if we're not in a password reset flow
+      const resetPanel = document.getElementById('resetPanel');
+      const resetPanelVisible = resetPanel && resetPanel.style.display !== 'none';
+      if (!resetPanelVisible) {
+        currentUser = session.user;
+        await bootApp();
+      }
+    } else if (event === 'SIGNED_OUT') {
+      currentUser = null;
+      showAuthScreen();
+    }
+  });
+
   const { data: { session } } = await sb.auth.getSession();
   if (session) {
     currentUser = session.user;
@@ -1791,17 +1812,6 @@ async function init() {
     state = loadStateLocal();
     showAuthScreen();
   }
-
-  // Listen for auth changes
-  sb.auth.onAuthStateChange(async (event, session) => {
-    if (event === 'SIGNED_IN' && session) {
-      currentUser = session.user;
-      await bootApp();
-    } else if (event === 'SIGNED_OUT') {
-      currentUser = null;
-      showAuthScreen();
-    }
-  });
 }
 
 init();
