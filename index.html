@@ -1784,17 +1784,21 @@ function checkUrlHashErrors() {
 async function init() {
   checkUrlHashErrors();
 
-  // Listen for auth changes — must be registered before getSession
+  // Detect PKCE recovery flow — Supabase appends ?code= to the redirect URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const hasCode = urlParams.has('code');
+
+  // Clean the URL
+  if (hasCode) window.history.replaceState(null, '', window.location.pathname);
+
+  // Register auth listener before getSession
   sb.auth.onAuthStateChange(async (event, session) => {
     if (event === 'PASSWORD_RECOVERY') {
-      // User clicked the reset link — show the reset panel, don't boot the app
       showAuthScreen();
       showResetPanel();
     } else if (event === 'SIGNED_IN' && session) {
-      // Only boot the app if we're not in a password reset flow
-      const resetPanel = document.getElementById('resetPanel');
-      const resetPanelVisible = resetPanel && resetPanel.style.display !== 'none';
-      if (!resetPanelVisible) {
+      const resetVisible = document.getElementById('resetPanel').style.display !== 'none';
+      if (!resetVisible) {
         currentUser = session.user;
         await bootApp();
       }
@@ -1805,6 +1809,19 @@ async function init() {
   });
 
   const { data: { session } } = await sb.auth.getSession();
+
+  if (hasCode && session) {
+    // A code was exchanged — this is a password reset landing
+    // Check the AMR (authentication methods) to confirm it's a recovery session
+    const amr = session.user?.amr || [];
+    const isRecovery = amr.some(a => a.method === 'recovery') || hasCode;
+    if (isRecovery) {
+      showAuthScreen();
+      showResetPanel();
+      return;
+    }
+  }
+
   if (session) {
     currentUser = session.user;
     await bootApp();
