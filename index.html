@@ -1740,27 +1740,18 @@ function showToast(msg) {
   setTimeout(() => t.classList.remove('show'), 2200);
 }
 
-// ---- URL HASH ERROR HANDLING ----
+// ---- URL HANDLING ----
 function checkUrlHashErrors() {
   const hash = window.location.hash;
-  if (!hash) return;
+  if (!hash) return false;
   const params = new URLSearchParams(hash.replace('#', ''));
-  const type = params.get('type');
   const error = params.get('error');
   const errorCode = params.get('error_code');
   const errorDesc = params.get('error_description');
 
-  // Clean the URL immediately
   window.history.replaceState(null, '', window.location.pathname);
 
-  // Password reset flow — show the reset panel
-  if (type === 'recovery') {
-    showAuthScreen();
-    showResetPanel();
-    return;
-  }
-
-  if (!error) return;
+  if (!error) return false;
 
   let userMessage = 'Something went wrong. Please try again.';
   if (errorCode === 'otp_expired') {
@@ -1778,25 +1769,37 @@ function checkUrlHashErrors() {
     errEl.style.color = 'var(--orange)';
     errEl.textContent = userMessage;
   }
+  return true;
 }
 
 // ---- INIT ----
 async function init() {
-  checkUrlHashErrors();
-
-  // Detect PKCE recovery flow — Supabase appends ?code= to the redirect URL
+  // Intercept ?token_hash=...&type=recovery BEFORE the SDK does anything.
+  // This requires the Supabase reset password email template to use
+  // {{ .SiteURL }}/?token_hash={{ .TokenHash }}&type=recovery
   const urlParams = new URLSearchParams(window.location.search);
-  const hasCode = urlParams.has('code');
+  const tokenHash = urlParams.get('token_hash');
+  const urlType = urlParams.get('type');
 
-  // Clean the URL
-  if (hasCode) window.history.replaceState(null, '', window.location.pathname);
+  if (tokenHash && urlType === 'recovery') {
+    window.history.replaceState(null, '', window.location.pathname);
+    showAuthScreen();
+    showResetPanel();
 
-  // Register auth listener before getSession
+    // Exchange token for a session so updateUser will work
+    const { error } = await sb.auth.verifyOtp({ token_hash: tokenHash, type: 'recovery' });
+    if (error) {
+      document.getElementById('resetGeneralError').textContent =
+        'This reset link has expired or already been used. Request a new one.';
+      document.getElementById('resetBtn').style.display = 'none';
+    }
+    return;
+  }
+
+  if (checkUrlHashErrors()) return;
+
   sb.auth.onAuthStateChange(async (event, session) => {
-    if (event === 'PASSWORD_RECOVERY') {
-      showAuthScreen();
-      showResetPanel();
-    } else if (event === 'SIGNED_IN' && session) {
+    if (event === 'SIGNED_IN' && session) {
       const resetVisible = document.getElementById('resetPanel').style.display !== 'none';
       if (!resetVisible) {
         currentUser = session.user;
@@ -1809,19 +1812,6 @@ async function init() {
   });
 
   const { data: { session } } = await sb.auth.getSession();
-
-  if (hasCode && session) {
-    // A code was exchanged — this is a password reset landing
-    // Check the AMR (authentication methods) to confirm it's a recovery session
-    const amr = session.user?.amr || [];
-    const isRecovery = amr.some(a => a.method === 'recovery') || hasCode;
-    if (isRecovery) {
-      showAuthScreen();
-      showResetPanel();
-      return;
-    }
-  }
-
   if (session) {
     currentUser = session.user;
     await bootApp();
