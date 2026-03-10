@@ -810,6 +810,18 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+// ---- CAPTURE URL PARAMS BEFORE SUPABASE INITIALIZES ----
+// The SDK scans and clears auth-related URL params during createClient().
+// We must read them synchronously here, before that happens.
+const _initParams = new URLSearchParams(window.location.search);
+const _recoveryTokenHash = _initParams.get('token_hash');
+const _recoveryType = _initParams.get('type');
+const _isRecoveryFlow = !!_recoveryTokenHash && _recoveryType === 'recovery';
+if (_isRecoveryFlow) {
+  // Clean URL immediately so a refresh doesn't re-trigger the flow
+  window.history.replaceState(null, '', window.location.pathname);
+}
+
 // ---- SUPABASE ----
 const SUPABASE_URL = 'https://tbhspnbezkpqrpzfutvm.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRiaHNwbmJlemtwcXJwemZ1dHZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxMzg1MTcsImV4cCI6MjA4ODcxNDUxN30.vAOOfQfLJy5H0Olq46bxrGqSaWEbpDlY3z3vv8G_Ecw';
@@ -1774,20 +1786,11 @@ function checkUrlHashErrors() {
 
 // ---- INIT ----
 async function init() {
-  // Intercept ?token_hash=...&type=recovery BEFORE the SDK does anything.
-  // This requires the Supabase reset password email template to use
-  // {{ .SiteURL }}/?token_hash={{ .TokenHash }}&type=recovery
-  const urlParams = new URLSearchParams(window.location.search);
-  const tokenHash = urlParams.get('token_hash');
-  const urlType = urlParams.get('type');
-
-  if (tokenHash && urlType === 'recovery') {
-    window.history.replaceState(null, '', window.location.pathname);
+  if (_isRecoveryFlow) {
     showAuthScreen();
     showResetPanel();
 
-    // Exchange token for a session so updateUser will work
-    const { error } = await sb.auth.verifyOtp({ token_hash: tokenHash, type: 'recovery' });
+    const { error } = await sb.auth.verifyOtp({ token_hash: _recoveryTokenHash, type: 'recovery' });
     if (error) {
       document.getElementById('resetGeneralError').textContent =
         'This reset link has expired or already been used. Request a new one.';
