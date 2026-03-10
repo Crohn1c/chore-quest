@@ -583,6 +583,22 @@
 </head>
 <body>
 
+<!-- Auth overlay -->
+<div id="authOverlay" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:1000;align-items:center;justify-content:center;">
+  <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:16px;padding:40px 36px;width:100%;max-width:380px;position:relative;">
+    <div style="font-family:'Cinzel Decorative',serif;font-size:1.3rem;font-weight:900;background:linear-gradient(135deg,var(--gold),var(--gold2),var(--orange));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-align:center;margin-bottom:6px;">⚔ ChoreQuest</div>
+    <div style="text-align:center;font-size:0.75rem;color:var(--text3);letter-spacing:2px;text-transform:uppercase;margin-bottom:28px;">Sign in to your quest</div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <input class="form-input" id="loginEmail" type="email" placeholder="Email address" style="padding:10px 14px;font-size:0.95rem;" />
+      <input class="form-input" id="loginPassword" type="password" placeholder="Password" style="padding:10px 14px;font-size:0.95rem;" onkeydown="if(event.key==='Enter')handleLogin()" />
+      <div id="loginError" style="font-size:0.78rem;color:var(--red);min-height:18px;"></div>
+      <button id="loginBtn" onclick="handleLogin()" style="background:linear-gradient(135deg,rgba(240,192,64,0.2),rgba(240,192,64,0.1));border:1px solid rgba(240,192,64,0.5);color:var(--gold);padding:10px;border-radius:8px;cursor:pointer;font-family:'Rajdhani',sans-serif;font-size:1rem;font-weight:700;letter-spacing:1px;transition:all 0.2s;">Sign In</button>
+      <button onclick="handleSignup()" style="background:none;border:1px solid var(--border);color:var(--text3);padding:8px;border-radius:8px;cursor:pointer;font-family:'Rajdhani',sans-serif;font-size:0.85rem;transition:all 0.2s;">Create Account</button>
+    </div>
+  </div>
+</div>
+
+<div id="appRoot" style="display:none;">
 <div class="app">
   <header>
     <div>
@@ -590,6 +606,7 @@
       <div class="week-label" id="weekLabel">Loading week...</div>
     </div>
     <div class="hud">
+      <div style="font-size:0.7rem;color:var(--text3);font-family:'Share Tech Mono',monospace;" id="userEmail"></div>
       <div class="points-display">
         <span class="points-icon">✦</span>
         <div>
@@ -597,6 +614,7 @@
           <div class="points-label">tokens</div>
         </div>
       </div>
+      <button onclick="handleLogout()" title="Sign out" style="background:none;border:1px solid var(--border);color:var(--text3);padding:6px 10px;border-radius:6px;cursor:pointer;font-size:0.8rem;transition:all 0.2s;" onmouseover="this.style.borderColor='var(--red)';this.style.color='var(--red)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text3)'">⏻</button>
     </div>
   </header>
 
@@ -703,10 +721,20 @@
     </div>
   </div>
 </div>
+</div>
 
 <div class="toast" id="toast"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+// ---- SUPABASE ----
+const SUPABASE_URL = 'https://tbhspnbezkpqrpzfutvm.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRiaHNwbmJlemtwcXJwemZ1dHZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcwNjQ5NzYsImV4cCI6MjA2MjY0MDk3Nn0.PIWlocQH7EmpymvgvjV8rw_P_JKw0P0';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let currentUser = null;
+let saveDebounceTimer = null;
+
 // ---- STATE ----
 const STORAGE_KEY = 'chorequest_v1';
 
@@ -777,7 +805,130 @@ function getWeekStart() {
   return mon.toISOString();
 }
 
-function loadState() {
+let state = defaultState();
+let rolling = false;
+
+function saveState() {
+  // Always keep localStorage as offline fallback
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  // Debounce Supabase writes to avoid hammering on rapid clicks
+  if (currentUser) {
+    clearTimeout(saveDebounceTimer);
+    saveDebounceTimer = setTimeout(syncToSupabase, 800);
+  }
+}
+
+async function syncToSupabase() {
+  if (!currentUser) return;
+  try {
+    await sb.from('chorequest_state').upsert({
+      user_id: currentUser.id,
+      state: state,
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'user_id' });
+  } catch(e) {
+    console.warn('Sync failed, data saved locally:', e.message);
+  }
+}
+
+async function loadFromSupabase() {
+  if (!currentUser) return false;
+  try {
+    const { data, error } = await sb.from('chorequest_state')
+      .select('state')
+      .eq('user_id', currentUser.id)
+      .single();
+    if (error || !data) return false;
+    const s = data.state;
+    s.customTasks = s.customTasks || [];
+    const savedWeek = new Date(s.weekStart).toISOString().slice(0,10);
+    const currentWeek = new Date(getWeekStart()).toISOString().slice(0,10);
+    if (savedWeek !== currentWeek) {
+      const fresh = defaultState();
+      fresh.points = s.points || 0;
+      fresh.rewards = s.rewards || DEFAULT_REWARDS;
+      fresh.history = s.history || [];
+      fresh.customTasks = s.customTasks;
+      fresh.completions = buildCompletions(CHORE_DEFS, s.customTasks);
+      state = fresh;
+    } else {
+      s.completions = buildCompletions(CHORE_DEFS, s.customTasks, s.completions);
+      state = s;
+    }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    return true;
+  } catch(e) {
+    console.warn('Could not load from Supabase, using local:', e.message);
+    return false;
+  }
+}
+
+// ---- AUTH ----
+async function handleLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const errEl = document.getElementById('loginError');
+  const btn = document.getElementById('loginBtn');
+
+  if (!email || !password) { errEl.textContent = 'Please enter email and password.'; return; }
+
+  btn.disabled = true;
+  btn.textContent = 'Signing in...';
+  errEl.textContent = '';
+
+  const { data, error } = await sb.auth.signInWithPassword({ email, password });
+  if (error) {
+    errEl.textContent = error.message;
+    btn.disabled = false;
+    btn.textContent = 'Sign In';
+    return;
+  }
+  currentUser = data.user;
+  await bootApp();
+}
+
+async function handleSignup() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const errEl = document.getElementById('loginError');
+
+  if (!email || !password) { errEl.textContent = 'Please enter email and password.'; return; }
+  if (password.length < 6) { errEl.textContent = 'Password must be at least 6 characters.'; return; }
+
+  errEl.textContent = '';
+  const { data, error } = await sb.auth.signUp({ email, password });
+  if (error) { errEl.textContent = error.message; return; }
+  errEl.style.color = 'var(--green)';
+  errEl.textContent = 'Account created! Check your email to confirm, then sign in.';
+  errEl.style.color = '';
+}
+
+async function handleLogout() {
+  await sb.auth.signOut();
+  currentUser = null;
+  state = loadStateLocal();
+  showAuthScreen();
+}
+
+function showAuthScreen() {
+  document.getElementById('authOverlay').style.display = 'flex';
+  document.getElementById('appRoot').style.display = 'none';
+}
+
+function hideAuthScreen() {
+  document.getElementById('authOverlay').style.display = 'none';
+  document.getElementById('appRoot').style.display = 'block';
+}
+
+async function bootApp() {
+  hideAuthScreen();
+  document.getElementById('userEmail').textContent = currentUser.email;
+  const remoteLoaded = await loadFromSupabase();
+  if (!remoteLoaded) state = loadStateLocal();
+  render();
+}
+
+function loadStateLocal() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return defaultState();
@@ -794,18 +945,10 @@ function loadState() {
       fresh.completions = buildCompletions(CHORE_DEFS, s.customTasks);
       return fresh;
     }
-    // Ensure completions keys are in sync with current task list
     s.completions = buildCompletions(CHORE_DEFS, s.customTasks, s.completions);
     return s;
   } catch(e) { return defaultState(); }
 }
-
-function saveState() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-}
-
-let state = loadState();
-let rolling = false;
 
 // ---- RENDER ----
 function render() {
@@ -1216,7 +1359,29 @@ function showToast(msg) {
 }
 
 // ---- INIT ----
-render();
+async function init() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) {
+    currentUser = session.user;
+    await bootApp();
+  } else {
+    state = loadStateLocal();
+    showAuthScreen();
+  }
+
+  // Listen for auth changes
+  sb.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'SIGNED_IN' && session) {
+      currentUser = session.user;
+      await bootApp();
+    } else if (event === 'SIGNED_OUT') {
+      currentUser = null;
+      showAuthScreen();
+    }
+  });
+}
+
+init();
 </script>
 </body>
 </html>
