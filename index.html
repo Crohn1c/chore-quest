@@ -584,18 +584,61 @@
 <body>
 
 <!-- Auth overlay -->
-<div id="authOverlay" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:1000;align-items:center;justify-content:center;">
-  <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:16px;padding:40px 36px;width:100%;max-width:380px;position:relative;">
+<div id="authOverlay" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:1000;align-items:center;justify-content:center;padding:16px;">
+
+  <!-- LOGIN PANEL -->
+  <div id="loginPanel" style="background:var(--bg2);border:1px solid var(--border2);border-radius:16px;padding:40px 36px;width:100%;max-width:400px;">
     <div style="font-family:'Cinzel Decorative',serif;font-size:1.3rem;font-weight:900;background:linear-gradient(135deg,var(--gold),var(--gold2),var(--orange));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-align:center;margin-bottom:6px;">⚔ ChoreQuest</div>
     <div style="text-align:center;font-size:0.75rem;color:var(--text3);letter-spacing:2px;text-transform:uppercase;margin-bottom:28px;">Sign in to your quest</div>
-    <div style="display:flex;flex-direction:column;gap:10px;">
-      <input class="form-input" id="loginEmail" type="email" placeholder="Email address" style="padding:10px 14px;font-size:0.95rem;" />
-      <input class="form-input" id="loginPassword" type="password" placeholder="Password" style="padding:10px 14px;font-size:0.95rem;" onkeydown="if(event.key==='Enter')handleLogin()" />
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div>
+        <label style="font-size:0.75rem;color:var(--text3);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:5px;">Email</label>
+        <input class="form-input" id="loginEmail" type="email" placeholder="your@email.com" autocomplete="email" style="padding:10px 14px;font-size:0.95rem;width:100%;" />
+      </div>
+      <div>
+        <label style="font-size:0.75rem;color:var(--text3);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:5px;">Password</label>
+        <input class="form-input" id="loginPassword" type="password" placeholder="••••••••" autocomplete="current-password" style="padding:10px 14px;font-size:0.95rem;width:100%;" onkeydown="if(event.key==='Enter')handleLogin()" />
+      </div>
       <div id="loginError" style="font-size:0.78rem;color:var(--red);min-height:18px;"></div>
-      <button id="loginBtn" onclick="handleLogin()" style="background:linear-gradient(135deg,rgba(240,192,64,0.2),rgba(240,192,64,0.1));border:1px solid rgba(240,192,64,0.5);color:var(--gold);padding:10px;border-radius:8px;cursor:pointer;font-family:'Rajdhani',sans-serif;font-size:1rem;font-weight:700;letter-spacing:1px;transition:all 0.2s;">Sign In</button>
-      <button onclick="handleSignup()" style="background:none;border:1px solid var(--border);color:var(--text3);padding:8px;border-radius:8px;cursor:pointer;font-family:'Rajdhani',sans-serif;font-size:0.85rem;transition:all 0.2s;">Create Account</button>
+      <button id="loginBtn" onclick="handleLogin()" style="background:linear-gradient(135deg,rgba(240,192,64,0.2),rgba(240,192,64,0.1));border:1px solid rgba(240,192,64,0.5);color:var(--gold);padding:11px;border-radius:8px;cursor:pointer;font-family:'Rajdhani',sans-serif;font-size:1rem;font-weight:700;letter-spacing:1px;transition:all 0.2s;width:100%;">Sign In</button>
+      <div style="text-align:center;font-size:0.8rem;color:var(--text3);padding:4px 0;">Don't have an account? <button onclick="showSignupPanel()" style="background:none;border:none;color:var(--blue);cursor:pointer;font-family:'Rajdhani',sans-serif;font-size:0.8rem;text-decoration:underline;">Create one</button></div>
     </div>
   </div>
+
+  <!-- SIGNUP PANEL -->
+  <div id="signupPanel" style="display:none;background:var(--bg2);border:1px solid var(--border2);border-radius:16px;padding:40px 36px;width:100%;max-width:400px;">
+    <button onclick="showLoginPanel()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:0.8rem;font-family:'Rajdhani',sans-serif;display:flex;align-items:center;gap:4px;margin-bottom:20px;padding:0;">← Back to sign in</button>
+    <div style="font-family:'Cinzel Decorative',serif;font-size:1.1rem;font-weight:900;background:linear-gradient(135deg,var(--gold),var(--gold2),var(--orange));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:4px;">Create Account</div>
+    <div style="font-size:0.75rem;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:24px;">Join the quest</div>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+
+      <div>
+        <label style="font-size:0.75rem;color:var(--text3);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:5px;">Email</label>
+        <input class="form-input" id="signupEmail" type="email" placeholder="your@email.com" autocomplete="email" style="padding:10px 14px;font-size:0.95rem;width:100%;" oninput="clearSignupFieldError('signupEmailError')" />
+        <div id="signupEmailError" style="font-size:0.75rem;color:var(--red);min-height:16px;margin-top:4px;"></div>
+      </div>
+
+      <div>
+        <label style="font-size:0.75rem;color:var(--text3);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:5px;">Password</label>
+        <input class="form-input" id="signupPassword" type="password" placeholder="••••••••" autocomplete="new-password" style="padding:10px 14px;font-size:0.95rem;width:100%;" oninput="checkPasswordStrength()" />
+        <div id="strengthBar" style="margin-top:6px;height:4px;background:var(--border);border-radius:2px;overflow:hidden;"><div id="strengthFill" style="height:100%;width:0%;border-radius:2px;transition:all 0.3s;"></div></div>
+        <div id="strengthLabel" style="font-size:0.68rem;color:var(--text3);margin-top:4px;"></div>
+        <div id="signupPasswordError" style="font-size:0.75rem;color:var(--red);min-height:16px;margin-top:2px;"></div>
+      </div>
+
+      <div>
+        <label style="font-size:0.75rem;color:var(--text3);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:5px;">Confirm Password</label>
+        <input class="form-input" id="signupPassword2" type="password" placeholder="••••••••" autocomplete="new-password" style="padding:10px 14px;font-size:0.95rem;width:100%;" oninput="clearSignupFieldError('signupPassword2Error')" onkeydown="if(event.key==='Enter')handleSignup()" />
+        <div id="signupPassword2Error" style="font-size:0.75rem;color:var(--red);min-height:16px;margin-top:4px;"></div>
+      </div>
+
+      <div id="signupGeneralError" style="font-size:0.78rem;color:var(--red);min-height:18px;"></div>
+      <div id="signupSuccess" style="display:none;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);border-radius:8px;padding:12px;font-size:0.85rem;color:var(--green);line-height:1.5;"></div>
+
+      <button id="signupBtn" onclick="handleSignup()" style="background:linear-gradient(135deg,rgba(59,130,246,0.2),rgba(59,130,246,0.1));border:1px solid rgba(59,130,246,0.5);color:var(--blue);padding:11px;border-radius:8px;cursor:pointer;font-family:'Rajdhani',sans-serif;font-size:1rem;font-weight:700;letter-spacing:1px;transition:all 0.2s;width:100%;">Create Account</button>
+    </div>
+  </div>
+
 </div>
 
 <div id="appRoot" style="display:none;">
@@ -863,44 +906,209 @@ async function loadFromSupabase() {
   }
 }
 
+// ---- AUTH HELPERS ----
+// Rate limiting - max 5 attempts per 15 min window
+const authAttempts = { count: 0, windowStart: Date.now() };
+
+function checkRateLimit() {
+  const now = Date.now();
+  if (now - authAttempts.windowStart > 15 * 60 * 1000) {
+    authAttempts.count = 0;
+    authAttempts.windowStart = now;
+  }
+  if (authAttempts.count >= 5) return false;
+  authAttempts.count++;
+  return true;
+}
+
+function sanitizeEmail(email) {
+  // Basic sanitization - trim, lowercase, validate shape
+  return email.trim().toLowerCase();
+}
+
+function isValidEmail(email) {
+  // RFC-compliant enough for UX purposes; Supabase validates server-side
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function getPasswordStrength(pw) {
+  let score = 0;
+  if (pw.length >= 8) score++;
+  if (pw.length >= 12) score++;
+  if (/[A-Z]/.test(pw)) score++;
+  if (/[0-9]/.test(pw)) score++;
+  if (/[^A-Za-z0-9]/.test(pw)) score++;
+  return score;
+}
+
+function checkPasswordStrength() {
+  const pw = document.getElementById('signupPassword').value;
+  const fill = document.getElementById('strengthFill');
+  const label = document.getElementById('strengthLabel');
+  if (!pw) { fill.style.width = '0%'; label.textContent = ''; return; }
+  const score = getPasswordStrength(pw);
+  const levels = [
+    { pct: '20%', color: 'var(--red)',    text: 'Very weak' },
+    { pct: '40%', color: 'var(--orange)', text: 'Weak' },
+    { pct: '60%', color: '#eab308',       text: 'Fair' },
+    { pct: '80%', color: 'var(--blue)',   text: 'Strong' },
+    { pct: '100%', color: 'var(--green)', text: 'Very strong' },
+  ];
+  const lvl = levels[Math.min(score, 4)];
+  fill.style.width = lvl.pct;
+  fill.style.background = lvl.color;
+  label.style.color = lvl.color;
+  label.textContent = lvl.text;
+}
+
+function clearSignupFieldError(id) {
+  document.getElementById(id).textContent = '';
+}
+
+function showLoginPanel() {
+  document.getElementById('loginPanel').style.display = 'block';
+  document.getElementById('signupPanel').style.display = 'none';
+  document.getElementById('loginError').textContent = '';
+}
+
+function showSignupPanel() {
+  document.getElementById('loginPanel').style.display = 'none';
+  document.getElementById('signupPanel').style.display = 'block';
+  // Reset signup form
+  ['signupEmail','signupPassword','signupPassword2'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  ['signupEmailError','signupPasswordError','signupPassword2Error','signupGeneralError'].forEach(id => {
+    document.getElementById(id).textContent = '';
+  });
+  document.getElementById('signupSuccess').style.display = 'none';
+  document.getElementById('strengthFill').style.width = '0%';
+  document.getElementById('strengthLabel').textContent = '';
+}
+
 // ---- AUTH ----
 async function handleLogin() {
-  const email = document.getElementById('loginEmail').value.trim();
+  const email = sanitizeEmail(document.getElementById('loginEmail').value);
   const password = document.getElementById('loginPassword').value;
   const errEl = document.getElementById('loginError');
   const btn = document.getElementById('loginBtn');
 
-  if (!email || !password) { errEl.textContent = 'Please enter email and password.'; return; }
+  errEl.textContent = '';
+
+  if (!email || !password) {
+    errEl.textContent = 'Please enter your email and password.';
+    return;
+  }
+
+  if (!isValidEmail(email)) {
+    errEl.textContent = 'Please enter a valid email address.';
+    return;
+  }
+
+  if (!checkRateLimit()) {
+    errEl.textContent = 'Too many attempts. Please wait 15 minutes before trying again.';
+    return;
+  }
 
   btn.disabled = true;
   btn.textContent = 'Signing in...';
-  errEl.textContent = '';
 
   const { data, error } = await sb.auth.signInWithPassword({ email, password });
+
+  btn.disabled = false;
+  btn.textContent = 'Sign In';
+
   if (error) {
-    errEl.textContent = error.message;
-    btn.disabled = false;
-    btn.textContent = 'Sign In';
+    // Deliberately vague for security — don't confirm whether email exists
+    if (error.message.toLowerCase().includes('invalid') || error.message.toLowerCase().includes('credentials')) {
+      errEl.textContent = 'Incorrect email or password.';
+    } else if (error.message.toLowerCase().includes('email not confirmed')) {
+      errEl.textContent = 'Please confirm your email address first. Check your inbox.';
+    } else {
+      errEl.textContent = 'Sign in failed. Please try again.';
+    }
     return;
   }
+
   currentUser = data.user;
   await bootApp();
 }
 
 async function handleSignup() {
-  const email = document.getElementById('loginEmail').value.trim();
-  const password = document.getElementById('loginPassword').value;
-  const errEl = document.getElementById('loginError');
+  const email = sanitizeEmail(document.getElementById('signupEmail').value);
+  const password = document.getElementById('signupPassword').value;
+  const password2 = document.getElementById('signupPassword2').value;
+  const btn = document.getElementById('signupBtn');
 
-  if (!email || !password) { errEl.textContent = 'Please enter email and password.'; return; }
-  if (password.length < 6) { errEl.textContent = 'Password must be at least 6 characters.'; return; }
+  // Reset errors
+  ['signupEmailError','signupPasswordError','signupPassword2Error','signupGeneralError'].forEach(id => {
+    document.getElementById(id).textContent = '';
+  });
+  document.getElementById('signupSuccess').style.display = 'none';
 
-  errEl.textContent = '';
+  let hasError = false;
+
+  if (!email) {
+    document.getElementById('signupEmailError').textContent = 'Email is required.';
+    hasError = true;
+  } else if (!isValidEmail(email)) {
+    document.getElementById('signupEmailError').textContent = 'Please enter a valid email address.';
+    hasError = true;
+  }
+
+  if (!password) {
+    document.getElementById('signupPasswordError').textContent = 'Password is required.';
+    hasError = true;
+  } else if (password.length < 8) {
+    document.getElementById('signupPasswordError').textContent = 'Password must be at least 8 characters.';
+    hasError = true;
+  } else if (getPasswordStrength(password) < 2) {
+    document.getElementById('signupPasswordError').textContent = 'Password is too weak. Add numbers or uppercase letters.';
+    hasError = true;
+  }
+
+  if (!password2) {
+    document.getElementById('signupPassword2Error').textContent = 'Please confirm your password.';
+    hasError = true;
+  } else if (password !== password2) {
+    document.getElementById('signupPassword2Error').textContent = 'Passwords do not match.';
+    hasError = true;
+  }
+
+  if (hasError) return;
+
+  if (!checkRateLimit()) {
+    document.getElementById('signupGeneralError').textContent = 'Too many attempts. Please wait 15 minutes.';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Creating account...';
+
   const { data, error } = await sb.auth.signUp({ email, password });
-  if (error) { errEl.textContent = error.message; return; }
-  errEl.style.color = 'var(--green)';
-  errEl.textContent = 'Account created! Check your email to confirm, then sign in.';
-  errEl.style.color = '';
+
+  btn.disabled = false;
+  btn.textContent = 'Create Account';
+
+  if (error) {
+    if (error.message.toLowerCase().includes('already registered') ||
+        error.message.toLowerCase().includes('already exists') ||
+        error.message.toLowerCase().includes('user already')) {
+      document.getElementById('signupEmailError').textContent = 'An account with this email already exists. Try signing in instead.';
+    } else if (error.message.toLowerCase().includes('password')) {
+      document.getElementById('signupPasswordError').textContent = error.message;
+    } else {
+      document.getElementById('signupGeneralError').textContent = 'Something went wrong. Please try again.';
+    }
+    return;
+  }
+
+  // Supabase may silently succeed even for duplicate emails (depends on config)
+  // If user object is returned but no session, email confirmation is pending
+  const successEl = document.getElementById('signupSuccess');
+  successEl.style.display = 'block';
+  successEl.textContent = 'Account created! Check your email for a confirmation link, then come back to sign in.';
+  btn.style.display = 'none';
 }
 
 async function handleLogout() {
