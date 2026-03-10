@@ -601,7 +601,10 @@
       </div>
       <div id="loginError" style="font-size:0.78rem;color:var(--red);min-height:18px;"></div>
       <button id="loginBtn" onclick="handleLogin()" style="background:linear-gradient(135deg,rgba(240,192,64,0.2),rgba(240,192,64,0.1));border:1px solid rgba(240,192,64,0.5);color:var(--gold);padding:11px;border-radius:8px;cursor:pointer;font-family:'Rajdhani',sans-serif;font-size:1rem;font-weight:700;letter-spacing:1px;transition:all 0.2s;width:100%;">Sign In</button>
-      <div style="text-align:center;font-size:0.8rem;color:var(--text3);padding:4px 0;">Don't have an account? <button onclick="showSignupPanel()" style="background:none;border:none;color:var(--blue);cursor:pointer;font-family:'Rajdhani',sans-serif;font-size:0.8rem;text-decoration:underline;">Create one</button></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.8rem;color:var(--text3);padding:4px 0;">
+        <span>Don't have an account? <button onclick="showSignupPanel()" style="background:none;border:none;color:var(--blue);cursor:pointer;font-family:'Rajdhani',sans-serif;font-size:0.8rem;text-decoration:underline;">Create one</button></span>
+        <button onclick="showForgotPanel()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-family:'Rajdhani',sans-serif;font-size:0.8rem;text-decoration:underline;">Forgot password?</button>
+      </div>
     </div>
   </div>
 
@@ -639,9 +642,46 @@
     </div>
   </div>
 
-</div>
+  <!-- FORGOT PASSWORD PANEL -->
+  <div id="forgotPanel" style="display:none;background:var(--bg2);border:1px solid var(--border2);border-radius:16px;padding:40px 36px;width:100%;max-width:400px;">
+    <button onclick="showLoginPanel()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:0.8rem;font-family:'Rajdhani',sans-serif;display:flex;align-items:center;gap:4px;margin-bottom:20px;padding:0;">← Back to sign in</button>
+    <div style="font-family:'Cinzel Decorative',serif;font-size:1.1rem;font-weight:900;background:linear-gradient(135deg,var(--gold),var(--gold2),var(--orange));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:4px;">Reset Password</div>
+    <div style="font-size:0.75rem;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:24px;">We'll send you a reset link</div>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div>
+        <label style="font-size:0.75rem;color:var(--text3);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:5px;">Email</label>
+        <input class="form-input" id="forgotEmail" type="email" placeholder="your@email.com" autocomplete="email" style="padding:10px 14px;font-size:0.95rem;width:100%;" onkeydown="if(event.key==='Enter')handleForgotPassword()" />
+        <div id="forgotEmailError" style="font-size:0.75rem;color:var(--red);min-height:16px;margin-top:4px;"></div>
+      </div>
+      <div id="forgotSuccess" style="display:none;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);border-radius:8px;padding:12px;font-size:0.85rem;color:var(--green);line-height:1.5;"></div>
+      <button id="forgotBtn" onclick="handleForgotPassword()" style="background:linear-gradient(135deg,rgba(240,192,64,0.2),rgba(240,192,64,0.1));border:1px solid rgba(240,192,64,0.5);color:var(--gold);padding:11px;border-radius:8px;cursor:pointer;font-family:'Rajdhani',sans-serif;font-size:1rem;font-weight:700;letter-spacing:1px;transition:all 0.2s;width:100%;">Send Reset Link</button>
+    </div>
+  </div>
 
-<div id="appRoot" style="display:none;">
+  <!-- RESET PASSWORD PANEL (reached via email link) -->
+  <div id="resetPanel" style="display:none;background:var(--bg2);border:1px solid var(--border2);border-radius:16px;padding:40px 36px;width:100%;max-width:400px;">
+    <div style="font-family:'Cinzel Decorative',serif;font-size:1.1rem;font-weight:900;background:linear-gradient(135deg,var(--gold),var(--gold2),var(--orange));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:4px;">New Password</div>
+    <div style="font-size:0.75rem;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:24px;">Choose a strong password</div>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div>
+        <label style="font-size:0.75rem;color:var(--text3);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:5px;">New Password</label>
+        <input class="form-input" id="resetPassword" type="password" placeholder="••••••••" autocomplete="new-password" style="padding:10px 14px;font-size:0.95rem;width:100%;" oninput="checkResetPasswordStrength()" />
+        <div id="resetStrengthBar" style="margin-top:6px;height:4px;background:var(--border);border-radius:2px;overflow:hidden;"><div id="resetStrengthFill" style="height:100%;width:0%;border-radius:2px;transition:all 0.3s;"></div></div>
+        <div id="resetStrengthLabel" style="font-size:0.68rem;color:var(--text3);margin-top:4px;"></div>
+        <div id="resetPasswordError" style="font-size:0.75rem;color:var(--red);min-height:16px;margin-top:2px;"></div>
+      </div>
+      <div>
+        <label style="font-size:0.75rem;color:var(--text3);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:5px;">Confirm New Password</label>
+        <input class="form-input" id="resetPassword2" type="password" placeholder="••••••••" autocomplete="new-password" style="padding:10px 14px;font-size:0.95rem;width:100%;" onkeydown="if(event.key==='Enter')handleResetPassword()" />
+        <div id="resetPassword2Error" style="font-size:0.75rem;color:var(--red);min-height:16px;margin-top:4px;"></div>
+      </div>
+      <div id="resetGeneralError" style="font-size:0.78rem;color:var(--red);min-height:18px;"></div>
+      <div id="resetSuccess" style="display:none;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);border-radius:8px;padding:12px;font-size:0.85rem;color:var(--green);line-height:1.5;"></div>
+      <button id="resetBtn" onclick="handleResetPassword()" style="background:linear-gradient(135deg,rgba(240,192,64,0.2),rgba(240,192,64,0.1));border:1px solid rgba(240,192,64,0.5);color:var(--gold);padding:11px;border-radius:8px;cursor:pointer;font-family:'Rajdhani',sans-serif;font-size:1rem;font-weight:700;letter-spacing:1px;transition:all 0.2s;width:100%;">Set New Password</button>
+    </div>
+  </div>
+
+</div>
 <div class="app">
   <header>
     <div>
@@ -968,13 +1008,16 @@ function clearSignupFieldError(id) {
 function showLoginPanel() {
   document.getElementById('loginPanel').style.display = 'block';
   document.getElementById('signupPanel').style.display = 'none';
+  document.getElementById('forgotPanel').style.display = 'none';
+  document.getElementById('resetPanel').style.display = 'none';
   document.getElementById('loginError').textContent = '';
 }
 
 function showSignupPanel() {
   document.getElementById('loginPanel').style.display = 'none';
   document.getElementById('signupPanel').style.display = 'block';
-  // Reset signup form
+  document.getElementById('forgotPanel').style.display = 'none';
+  document.getElementById('resetPanel').style.display = 'none';
   ['signupEmail','signupPassword','signupPassword2'].forEach(id => {
     document.getElementById(id).value = '';
   });
@@ -982,8 +1025,27 @@ function showSignupPanel() {
     document.getElementById(id).textContent = '';
   });
   document.getElementById('signupSuccess').style.display = 'none';
+  document.getElementById('signupBtn').style.display = '';
   document.getElementById('strengthFill').style.width = '0%';
   document.getElementById('strengthLabel').textContent = '';
+}
+
+function showForgotPanel() {
+  document.getElementById('loginPanel').style.display = 'none';
+  document.getElementById('signupPanel').style.display = 'none';
+  document.getElementById('forgotPanel').style.display = 'block';
+  document.getElementById('resetPanel').style.display = 'none';
+  document.getElementById('forgotEmail').value = '';
+  document.getElementById('forgotEmailError').textContent = '';
+  document.getElementById('forgotSuccess').style.display = 'none';
+  document.getElementById('forgotBtn').style.display = '';
+}
+
+function showResetPanel() {
+  document.getElementById('loginPanel').style.display = 'none';
+  document.getElementById('signupPanel').style.display = 'none';
+  document.getElementById('forgotPanel').style.display = 'none';
+  document.getElementById('resetPanel').style.display = 'block';
 }
 
 // ---- AUTH ----
@@ -1107,8 +1169,120 @@ async function handleSignup() {
   // If user object is returned but no session, email confirmation is pending
   const successEl = document.getElementById('signupSuccess');
   successEl.style.display = 'block';
-  successEl.textContent = 'Account created! Check your email for a confirmation link, then come back to sign in.';
+  successEl.textContent = 'If this email is not yet registered, you will receive a confirmation link shortly. Check your inbox and spam folder.';
   btn.style.display = 'none';
+}
+
+async function handleForgotPassword() {
+  const email = sanitizeEmail(document.getElementById('forgotEmail').value);
+  const errEl = document.getElementById('forgotEmailError');
+  const btn = document.getElementById('forgotBtn');
+
+  errEl.textContent = '';
+
+  if (!email) { errEl.textContent = 'Please enter your email address.'; return; }
+  if (!isValidEmail(email)) { errEl.textContent = 'Please enter a valid email address.'; return; }
+
+  if (!checkRateLimit()) {
+    errEl.textContent = 'Too many attempts. Please wait 15 minutes.';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Sending...';
+
+  await sb.auth.resetPasswordForEmail(email, {
+    redirectTo: 'https://chorequest.crohn1c.dev/'
+  });
+
+  // Always show success — never confirm whether email exists (enumeration protection)
+  btn.disabled = false;
+  btn.style.display = 'none';
+  const successEl = document.getElementById('forgotSuccess');
+  successEl.style.display = 'block';
+  successEl.textContent = 'If an account exists for that email, a reset link is on its way. Check your inbox and spam folder.';
+}
+
+async function handleResetPassword() {
+  const password = document.getElementById('resetPassword').value;
+  const password2 = document.getElementById('resetPassword2').value;
+  const btn = document.getElementById('resetBtn');
+
+  ['resetPasswordError','resetPassword2Error','resetGeneralError'].forEach(id => {
+    document.getElementById(id).textContent = '';
+  });
+  document.getElementById('resetSuccess').style.display = 'none';
+
+  let hasError = false;
+
+  if (!password) {
+    document.getElementById('resetPasswordError').textContent = 'Please enter a new password.';
+    hasError = true;
+  } else if (password.length < 8) {
+    document.getElementById('resetPasswordError').textContent = 'Password must be at least 8 characters.';
+    hasError = true;
+  } else if (getPasswordStrength(password) < 2) {
+    document.getElementById('resetPasswordError').textContent = 'Password is too weak. Add numbers or uppercase letters.';
+    hasError = true;
+  }
+
+  if (!password2) {
+    document.getElementById('resetPassword2Error').textContent = 'Please confirm your new password.';
+    hasError = true;
+  } else if (password !== password2) {
+    document.getElementById('resetPassword2Error').textContent = 'Passwords do not match.';
+    hasError = true;
+  }
+
+  if (hasError) return;
+
+  btn.disabled = true;
+  btn.textContent = 'Updating...';
+
+  const { error } = await sb.auth.updateUser({ password });
+
+  btn.disabled = false;
+  btn.textContent = 'Set New Password';
+
+  if (error) {
+    document.getElementById('resetGeneralError').textContent = 'Failed to update password. Your reset link may have expired — request a new one.';
+    return;
+  }
+
+  const successEl = document.getElementById('resetSuccess');
+  successEl.style.display = 'block';
+  successEl.textContent = 'Password updated successfully! Taking you to the app...';
+  btn.style.display = 'none';
+
+  setTimeout(async () => {
+    const { data: { session } } = await sb.auth.getSession();
+    if (session) {
+      currentUser = session.user;
+      await bootApp();
+    } else {
+      showLoginPanel();
+    }
+  }, 2000);
+}
+
+function checkResetPasswordStrength() {
+  const pw = document.getElementById('resetPassword').value;
+  const fill = document.getElementById('resetStrengthFill');
+  const label = document.getElementById('resetStrengthLabel');
+  if (!pw) { fill.style.width = '0%'; label.textContent = ''; return; }
+  const score = getPasswordStrength(pw);
+  const levels = [
+    { pct: '20%', color: 'var(--red)',    text: 'Very weak' },
+    { pct: '40%', color: 'var(--orange)', text: 'Weak' },
+    { pct: '60%', color: '#eab308',       text: 'Fair' },
+    { pct: '80%', color: 'var(--blue)',   text: 'Strong' },
+    { pct: '100%', color: 'var(--green)', text: 'Very strong' },
+  ];
+  const lvl = levels[Math.min(score, 4)];
+  fill.style.width = lvl.pct;
+  fill.style.background = lvl.color;
+  label.style.color = lvl.color;
+  label.textContent = lvl.text;
 }
 
 async function handleLogout() {
@@ -1571,13 +1745,22 @@ function checkUrlHashErrors() {
   const hash = window.location.hash;
   if (!hash) return;
   const params = new URLSearchParams(hash.replace('#', ''));
+  const type = params.get('type');
   const error = params.get('error');
   const errorCode = params.get('error_code');
   const errorDesc = params.get('error_description');
-  if (!error) return;
 
-  // Clean the URL so it doesn't persist on refresh
+  // Clean the URL immediately
   window.history.replaceState(null, '', window.location.pathname);
+
+  // Password reset flow — show the reset panel
+  if (type === 'recovery') {
+    showAuthScreen();
+    showResetPanel();
+    return;
+  }
+
+  if (!error) return;
 
   let userMessage = 'Something went wrong. Please try again.';
   if (errorCode === 'otp_expired') {
@@ -1588,8 +1771,8 @@ function checkUrlHashErrors() {
     userMessage = decodeURIComponent(errorDesc.replace(/\+/g, ' '));
   }
 
-  // Show the auth screen with the error visible
   showAuthScreen();
+  showLoginPanel();
   const errEl = document.getElementById('loginError');
   if (errEl) {
     errEl.style.color = 'var(--orange)';
