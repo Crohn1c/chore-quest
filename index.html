@@ -1008,30 +1008,55 @@ async function loadFromSupabase() {
     const { data, error } = await sb.from('chorequest_state')
       .select('state')
       .eq('user_id', currentUser.id)
-      .single();
-    if (error || !data) return false;
-    const s = data.state;
-    s.customTasks = s.customTasks || [];
-    const savedWeek = new Date(s.weekStart).toISOString().slice(0,10);
-    const currentWeek = new Date(getWeekStart()).toISOString().slice(0,10);
-    if (savedWeek !== currentWeek) {
-      const fresh = defaultState();
-      fresh.points = s.points || 0;
-      fresh.rewards = s.rewards || DEFAULT_REWARDS;
-      fresh.history = s.history || [];
-      fresh.customTasks = s.customTasks;
-      fresh.completions = buildCompletions(CHORE_DEFS, s.customTasks);
-      state = fresh;
-    } else {
-      s.completions = buildCompletions(CHORE_DEFS, s.customTasks, s.completions);
-      state = s;
+      .maybeSingle(); // returns null instead of error when no row found
+
+    // No saved state yet — first login, use defaults
+    if (!data) return false;
+
+    if (error) {
+      console.warn('Supabase load error:', error.message);
+      return false;
     }
+
+    const s = normalizeState(data.state);
+    state = s;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     return true;
   } catch(e) {
     console.warn('Could not load from Supabase, using local:', e.message);
     return false;
   }
+}
+
+// Normalize and migrate state coming from storage (local or remote).
+// Guards against missing fields, stale week data, and type drift.
+function normalizeState(s) {
+  if (!s || typeof s !== 'object') return defaultState();
+
+  s.customTasks = Array.isArray(s.customTasks) ? s.customTasks : [];
+  s.rewards = Array.isArray(s.rewards) && s.rewards.length ? s.rewards : DEFAULT_REWARDS;
+  s.history = Array.isArray(s.history) ? s.history : [];
+  s.points = typeof s.points === 'number' ? s.points : 0;
+
+  // Week boundary check — use string comparison to avoid timezone drift
+  let savedWeek = '';
+  try { savedWeek = new Date(s.weekStart).toISOString().slice(0, 10); } catch(e) {}
+  const currentWeek = new Date(getWeekStart()).toISOString().slice(0, 10);
+
+  if (!savedWeek || savedWeek !== currentWeek) {
+    // New week — reset completions, carry points/rewards/history/customTasks
+    const fresh = defaultState();
+    fresh.points = s.points;
+    fresh.rewards = s.rewards;
+    fresh.history = s.history;
+    fresh.customTasks = s.customTasks;
+    fresh.completions = buildCompletions(CHORE_DEFS, s.customTasks);
+    return fresh;
+  }
+
+  // Same week — restore completions, patching in any new built-in tasks
+  s.completions = buildCompletions(CHORE_DEFS, s.customTasks, s.completions || {});
+  return s;
 }
 
 // ---- AUTH HELPERS ----
@@ -1402,22 +1427,11 @@ function loadStateLocal() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return defaultState();
-    const s = JSON.parse(raw);
-    const savedWeek = new Date(s.weekStart).toISOString().slice(0,10);
-    const currentWeek = new Date(getWeekStart()).toISOString().slice(0,10);
-    s.customTasks = s.customTasks || [];
-    if (savedWeek !== currentWeek) {
-      const fresh = defaultState();
-      fresh.points = s.points || 0;
-      fresh.rewards = s.rewards || DEFAULT_REWARDS;
-      fresh.history = s.history || [];
-      fresh.customTasks = s.customTasks;
-      fresh.completions = buildCompletions(CHORE_DEFS, s.customTasks);
-      return fresh;
-    }
-    s.completions = buildCompletions(CHORE_DEFS, s.customTasks, s.completions);
-    return s;
-  } catch(e) { return defaultState(); }
+    return normalizeState(JSON.parse(raw));
+  } catch(e) {
+    console.warn('Local state parse error:', e.message);
+    return defaultState();
+  }
 }
 
 // ---- RENDER ----
