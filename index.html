@@ -1000,6 +1000,13 @@ const _safeStorage = {
   removeItem: (k) => { try { localStorage.removeItem(k);       } catch(e) { delete _memStore[k]; } },
 };
 
+if (typeof supabase === 'undefined') {
+  document.addEventListener('DOMContentLoaded', function() {
+    document.body.innerHTML = '<div style="color:#ef4444;font-family:sans-serif;padding:40px;text-align:center">Failed to load Supabase. Please check your connection and refresh.</div>';
+  });
+  throw new Error('Supabase SDK not loaded');
+}
+
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
   auth: {
     storage: _safeStorage,
@@ -2264,14 +2271,7 @@ async function init() {
   });
 }
 
-// Guard: if supabase failed to load, show error and stop
-if (typeof supabase === 'undefined') {
-  document.addEventListener('DOMContentLoaded', function() {
-    document.body.innerHTML = '<div style="color:#ef4444;font-family:sans-serif;padding:40px;text-align:center">Failed to load Supabase. Please check your connection and refresh.</div>';
-  });
-} else {
-  document.addEventListener('DOMContentLoaded', init);
-}
+document.addEventListener('DOMContentLoaded', init);
 </script>
 </body>
 </html>
