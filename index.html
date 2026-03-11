@@ -2271,6 +2271,18 @@ async function init() {
 }
 
 init();
+
+  // Expose functions called from inline HTML attributes to global scope
+  const _expose = {
+    applyTemplate, addTemplateBundle, addCustomTask, autoSuggestDiff,
+    toggleCategoryCustom, addReward, deleteReward, roll,
+    handleLogout, handleLogin, handleSignup,
+    handleForgotPassword, handleResetPassword,
+    checkPasswordStrength, checkResetPasswordStrength,
+    toggleLoginView
+  };
+  Object.entries(_expose).forEach(([k, v]) => { window[k] = v; });
+
 }); // end DOMContentLoaded
 </script>
 </body>
