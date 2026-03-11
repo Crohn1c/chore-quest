@@ -884,7 +884,7 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
 // ---- CAPTURE URL PARAMS BEFORE SUPABASE INITIALIZES ----
 // The SDK scans and clears auth-related URL params during createClient().
@@ -901,7 +901,22 @@ if (_isRecoveryFlow) {
 // ---- SUPABASE ----
 const SUPABASE_URL = 'https://tbhspnbezkpqrpzfutvm.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRiaHNwbmJlemtwcXJwemZ1dHZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxMzg1MTcsImV4cCI6MjA4ODcxNDUxN30.vAOOfQfLJy5H0Olq46bxrGqSaWEbpDlY3z3vv8G_Ecw';
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// Memory fallback in case localStorage is blocked by tracking prevention
+const _memStore = {};
+const _safeStorage = {
+  getItem:    (k) => { try { return localStorage.getItem(k);    } catch(e) { return _memStore[k] ?? null; } },
+  setItem:    (k, v) => { try { localStorage.setItem(k, v);    } catch(e) { _memStore[k] = v; } },
+  removeItem: (k) => { try { localStorage.removeItem(k);       } catch(e) { delete _memStore[k]; } },
+};
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: {
+    storage: _safeStorage,
+    persistSession: true,
+    detectSessionInUrl: true,
+    autoRefreshToken: true,
+  }
+});
 
 let currentUser = null;
 let saveDebounceTimer = null;
@@ -992,11 +1007,13 @@ function saveState() {
 async function syncToSupabase() {
   if (!currentUser) return;
   try {
-    await sb.from('chorequest_state').upsert({
+    const { error } = await sb.from('chorequest_state').upsert({
       user_id: currentUser.id,
       state: state,
       updated_at: new Date().toISOString()
     }, { onConflict: 'user_id' });
+    if (error) console.error('Supabase save error:', error.message, error);
+    else console.log('Supabase save OK, points:', state.points);
   } catch(e) {
     console.warn('Sync failed, data saved locally:', e.message);
   }
@@ -1891,8 +1908,21 @@ async function init() {
 
   if (checkUrlHashErrors()) return;
 
+  // Boot from getSession first — this is the reliable path on refresh.
+  // onAuthStateChange is only used for live sign-in/sign-out events after boot.
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) {
+    currentUser = session.user;
+    await bootApp();
+  } else {
+    state = loadStateLocal();
+    showAuthScreen();
+  }
+
+  // Listen for subsequent auth changes (login, logout) — NOT initial session
   sb.auth.onAuthStateChange(async (event, session) => {
-    if (event === 'SIGNED_IN' && session) {
+    if (event === 'SIGNED_IN' && session && !currentUser) {
+      // Only handle SIGNED_IN if we're not already booted (avoids double-boot on refresh)
       const resetVisible = document.getElementById('resetPanel').style.display !== 'none';
       if (!resetVisible) {
         currentUser = session.user;
@@ -1903,15 +1933,6 @@ async function init() {
       showAuthScreen();
     }
   });
-
-  const { data: { session } } = await sb.auth.getSession();
-  if (session) {
-    currentUser = session.user;
-    await bootApp();
-  } else {
-    state = loadStateLocal();
-    showAuthScreen();
-  }
 }
 
 init();
