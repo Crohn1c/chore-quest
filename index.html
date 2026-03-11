@@ -557,6 +557,157 @@
   ::-webkit-scrollbar-track { background: var(--bg); }
   ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
 
+  /* Streak display */
+  .streak-display {
+    background: linear-gradient(135deg, #1e2338, #141720);
+    border: 1px solid rgba(249,115,22,0.5);
+    border-radius: 8px;
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    box-shadow: 0 0 10px rgba(249,115,22,0.1);
+    cursor: default;
+  }
+  .streak-icon { font-size: 1.1rem; }
+  .streak-value {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 1.3rem;
+    color: var(--orange);
+    font-weight: 700;
+    line-height: 1;
+    min-width: 20px;
+  }
+  .streak-label {
+    font-size: 0.65rem;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .streak-display.frozen { border-color: rgba(34,211,238,0.4); box-shadow: 0 0 10px rgba(34,211,238,0.1); }
+  .streak-display.frozen .streak-value { color: var(--cyan); }
+
+  /* Level display */
+  .level-display {
+    background: linear-gradient(135deg, #1e2338, #141720);
+    border: 1px solid rgba(168,85,247,0.4);
+    border-radius: 8px;
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    box-shadow: 0 0 10px rgba(168,85,247,0.08);
+    cursor: default;
+    position: relative;
+    overflow: hidden;
+  }
+  .level-icon { font-size: 1rem; }
+  .level-value {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 1.1rem;
+    color: var(--purple2);
+    font-weight: 700;
+    line-height: 1;
+    white-space: nowrap;
+  }
+  .level-title {
+    font-size: 0.6rem;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  /* XP bar — full-width strip below header */
+  .xp-bar-wrap {
+    margin-bottom: 20px;
+    position: relative;
+  }
+  .xp-bar-bg {
+    height: 5px;
+    background: var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .xp-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--purple), var(--purple2));
+    border-radius: 3px;
+    transition: width 0.6s cubic-bezier(0.34,1.56,0.64,1);
+    box-shadow: 0 0 8px rgba(168,85,247,0.5);
+  }
+  .xp-bar-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+    font-size: 0.7rem;
+    color: var(--text3);
+    font-family: 'Share Tech Mono', monospace;
+    letter-spacing: 1px;
+  }
+  .xp-bar-meta .xp-level-tag {
+    color: var(--purple2);
+    font-weight: 700;
+  }
+  .xp-bar-meta .xp-next {
+    color: var(--text3);
+  }
+
+  /* Level-up toast */
+  .levelup-toast {
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%) scale(0.7);
+    background: linear-gradient(135deg, #1e1535, #120d28);
+    border: 2px solid var(--purple);
+    border-radius: 16px;
+    padding: 28px 40px;
+    text-align: center;
+    z-index: 200;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1);
+    box-shadow: 0 0 40px rgba(168,85,247,0.4), 0 0 80px rgba(168,85,247,0.15);
+  }
+  .levelup-toast.show {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  .levelup-title {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 0.7rem;
+    letter-spacing: 4px;
+    color: var(--purple2);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .levelup-level {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 2.2rem;
+    color: var(--purple2);
+    font-weight: 700;
+    line-height: 1;
+  }
+  .levelup-subtitle {
+    font-size: 0.95rem;
+    color: var(--text2);
+    margin-top: 6px;
+    letter-spacing: 1px;
+  }
+
+  /* Streak bonus badge */
+  .streak-bonus {
+    font-size: 0.62rem;
+    color: var(--orange);
+    font-family: 'Share Tech Mono', monospace;
+    letter-spacing: 0.5px;
+    padding: 1px 5px;
+    border: 1px solid rgba(249,115,22,0.3);
+    border-radius: 3px;
+    background: rgba(249,115,22,0.08);
+    white-space: nowrap;
+  }
+
   /* Pulse on point gain */
   @keyframes pointPop { 0%,100% { transform: scale(1); } 50% { transform: scale(1.3); color: var(--gold2); } }
   .point-pop { animation: pointPop 0.4s ease; }
@@ -663,6 +814,11 @@
     .points-value { font-size: 1.1rem; min-width: 28px; }
     .points-label { display: none; }
 
+    .streak-display, .level-display { padding: 6px 8px; gap: 5px; }
+    .streak-icon { font-size: 0.95rem; }
+    .streak-value { font-size: 1.1rem; }
+    .level-value { font-size: 0.95rem; }
+    .level-title, .streak-label { display: none; }
     /* Email address: hide on very small screens */
     #userEmail { display: none; }
 
@@ -823,6 +979,20 @@
     </div>
     <div class="hud">
       <div style="font-size:0.7rem;color:var(--text3);font-family:'Share Tech Mono',monospace;" id="userEmail"></div>
+      <div class="streak-display" id="streakDisplay" title="Daily login streak">
+        <span class="streak-icon">🔥</span>
+        <div>
+          <div class="streak-value" id="streakCount">0</div>
+          <div class="streak-label">streak</div>
+        </div>
+      </div>
+      <div class="level-display" id="levelDisplay" title="Your adventurer level">
+        <span class="level-icon">⚔</span>
+        <div>
+          <div class="level-value" id="levelValue">Lv.1</div>
+          <div class="level-title" id="levelTitle">Novice</div>
+        </div>
+      </div>
       <div class="points-display">
         <span class="points-icon">✦</span>
         <div>
@@ -833,6 +1003,14 @@
       <button onclick="handleLogout()" title="Sign out" style="background:none;border:1px solid var(--border);color:var(--text3);padding:6px 10px;border-radius:6px;cursor:pointer;font-size:0.8rem;transition:all 0.2s;" onmouseover="this.style.borderColor='var(--red)';this.style.color='var(--red)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text3)'">⏻</button>
     </div>
   </header>
+
+  <div class="xp-bar-wrap">
+    <div class="xp-bar-meta">
+      <span class="xp-level-tag" id="xpLevelTag">Level 1 — Novice</span>
+      <span class="xp-next" id="xpNext">0 / 20 XP</span>
+    </div>
+    <div class="xp-bar-bg"><div class="xp-bar-fill" id="xpBarFill" style="width:0%"></div></div>
+  </div>
 
   <div class="main-grid">
     <!-- Left: chore tracker -->
@@ -975,6 +1153,11 @@
 </div><!-- /appRoot -->
 
 <div class="toast" id="toast"></div>
+<div class="levelup-toast" id="levelupToast">
+  <div class="levelup-title">Level Up!</div>
+  <div class="levelup-level" id="levelupLevel">Lv.2</div>
+  <div class="levelup-subtitle" id="levelupSubtitle">Apprentice</div>
+</div>
 
 <script src="https://unpkg.com/@supabase/supabase-js@2.45.0/dist/umd/supabase.js"></script>
 <script>
@@ -1038,6 +1221,74 @@ const TIER_WEIGHTS = {
   10: [ 2,  5, 15, 38, 40]
 };
 
+// ---- LEVELING ----
+const LEVELS = [
+  { level: 1,  xp: 0,    title: 'Novice' },
+  { level: 2,  xp: 20,   title: 'Apprentice' },
+  { level: 3,  xp: 55,   title: 'Adept' },
+  { level: 4,  xp: 110,  title: 'Journeyman' },
+  { level: 5,  xp: 190,  title: 'Expert' },
+  { level: 6,  xp: 300,  title: 'Veteran' },
+  { level: 7,  xp: 445,  title: 'Champion' },
+  { level: 8,  xp: 630,  title: 'Hero' },
+  { level: 9,  xp: 860,  title: 'Master' },
+  { level: 10, xp: 1140, title: 'Legend' },
+];
+
+function getLevelInfo(totalXP) {
+  let current = LEVELS[0];
+  let next = LEVELS[1];
+  for (let i = LEVELS.length - 1; i >= 0; i--) {
+    if (totalXP >= LEVELS[i].xp) {
+      current = LEVELS[i];
+      next = LEVELS[i + 1] || null;
+      break;
+    }
+  }
+  const xpInLevel = totalXP - current.xp;
+  const xpToNext = next ? next.xp - current.xp : 0;
+  const pct = xpToNext > 0 ? Math.min(100, Math.round(xpInLevel / xpToNext * 100)) : 100;
+  return { current, next, xpInLevel, xpToNext, pct };
+}
+
+function getTodayStr() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function getYesterdayStr() {
+  const d = new Date(); d.setDate(d.getDate() - 1);
+  return d.toISOString().slice(0, 10);
+}
+
+function updateStreak() {
+  const today = getTodayStr();
+  const yesterday = getYesterdayStr();
+  const last = state.streak.lastDate;
+
+  if (last === today) return; // already active today, no change
+  if (last === yesterday) {
+    state.streak.count++;
+  } else {
+    state.streak.count = 1; // reset or new streak
+  }
+  state.streak.lastDate = today;
+}
+
+function getStreakBonus() {
+  const s = state.streak.count;
+  if (s >= 7) return 2;
+  if (s >= 3) return 1;
+  return 0;
+}
+
+function showLevelUpToast(levelInfo) {
+  const t = document.getElementById('levelupToast');
+  document.getElementById('levelupLevel').textContent = 'Lv.' + levelInfo.current.level;
+  document.getElementById('levelupSubtitle').textContent = levelInfo.current.title;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
 const DEFAULT_REWARDS = [
   { id: 'r1', name: '€5 Dopamine purchase', rarity: 'uncommon', icon: '💸' },
   { id: 'r2', name: '€10 Dopamine purchase', rarity: 'epic', icon: '💰' },
@@ -1076,7 +1327,13 @@ function buildCompletions(choreDefs, customTasks, existing) {
 function defaultState() {
   const weekStart = getWeekStart();
   const completions = buildCompletions(CHORE_DEFS, []);
-  return { points: 0, completions, weekStart, rewards: DEFAULT_REWARDS, history: [], customTasks: [], taskDays: {}, hiddenBuiltins: [] };
+  return {
+    points: 0, completions, weekStart,
+    rewards: DEFAULT_REWARDS, history: [],
+    customTasks: [], taskDays: {}, hiddenBuiltins: [],
+    totalXP: 0,
+    streak: { count: 0, lastDate: '' }
+  };
 }
 
 function getWeekStart() {
@@ -1154,6 +1411,10 @@ function normalizeState(s) {
   s.points = typeof s.points === 'number' ? s.points : 0;
   s.taskDays = (s.taskDays && typeof s.taskDays === 'object') ? s.taskDays : {};
   s.hiddenBuiltins = Array.isArray(s.hiddenBuiltins) ? s.hiddenBuiltins : [];
+  s.totalXP = typeof s.totalXP === 'number' ? s.totalXP : s.points || 0;
+  s.streak = (s.streak && typeof s.streak === 'object') ? s.streak : { count: 0, lastDate: '' };
+  if (typeof s.streak.count !== 'number') s.streak.count = 0;
+  if (typeof s.streak.lastDate !== 'string') s.streak.lastDate = '';
 
   // Week boundary check — use string comparison to avoid timezone drift
   let savedWeek = '';
@@ -1168,6 +1429,8 @@ function normalizeState(s) {
     fresh.history = s.history;
     fresh.customTasks = s.customTasks;
     fresh.completions = buildCompletions(CHORE_DEFS, s.customTasks);
+    fresh.totalXP = s.totalXP || 0;
+    fresh.streak = s.streak || { count: 0, lastDate: '' };
     return fresh;
   }
 
@@ -1570,6 +1833,9 @@ function render() {
   renderRewardChips();
   renderHistory();
   renderWeekLabel();
+  renderStreak();
+  renderLevel();
+  renderXPBar();
 }
 
 function renderWeekLabel() {
@@ -1577,6 +1843,47 @@ function renderWeekLabel() {
   const we = new Date(ws); we.setDate(ws.getDate() + 6);
   const fmt = d => d.toLocaleDateString('en-BE', { day:'numeric', month:'short' });
   document.getElementById('weekLabel').textContent = `Week of ${fmt(ws)} – ${fmt(we)}`;
+}
+
+function renderStreak() {
+  const count = (state.streak && state.streak.count) || 0;
+  document.getElementById('streakCount').textContent = count;
+  const display = document.getElementById('streakDisplay');
+  const isActive = state.streak && state.streak.lastDate === getTodayStr();
+  display.classList.toggle('frozen', !isActive && count > 0);
+  // Update tooltip
+  const bonus = getStreakBonus();
+  let tip = `${count}-day streak`;
+  if (bonus > 0) tip += ` · +${bonus} bonus token${bonus > 1 ? 's' : ''} per task`;
+  if (!isActive && count > 0) tip += ' · Complete a task to keep your streak!';
+  display.title = tip;
+}
+
+function renderLevel() {
+  const info = getLevelInfo(state.totalXP || 0);
+  document.getElementById('levelValue').textContent = 'Lv.' + info.current.level;
+  document.getElementById('levelTitle').textContent = info.current.title;
+  const bonus = getStreakBonus();
+  let tip = `${info.current.title} · ${state.totalXP || 0} total XP`;
+  if (info.next) tip += ` · Next: ${info.next.title} in ${info.xpToNext - info.xpInLevel} XP`;
+  document.getElementById('levelDisplay').title = tip;
+}
+
+function renderXPBar() {
+  const totalXP = state.totalXP || 0;
+  const info = getLevelInfo(totalXP);
+  document.getElementById('xpLevelTag').textContent =
+    `Level ${info.current.level} — ${info.current.title}`;
+  if (info.next) {
+    document.getElementById('xpNext').textContent =
+      `${info.xpInLevel} / ${info.xpToNext} XP`;
+    document.getElementById('xpBarFill').style.width = info.pct + '%';
+  } else {
+    document.getElementById('xpNext').textContent = 'MAX LEVEL';
+    document.getElementById('xpBarFill').style.width = '100%';
+    document.getElementById('xpBarFill').style.background =
+      'linear-gradient(90deg, var(--gold), var(--gold2))';
+  }
 }
 
 function renderPoints() {
@@ -1845,9 +2152,37 @@ function renderHistory() {
 // ---- ACTIONS ----
 function toggleChore(key, points) {
   if (state.completions[key]) return; // locked once done
+
+  const prevLevel = getLevelInfo(state.totalXP).current.level;
+
   state.completions[key] = true;
-  state.points += points;
-  showToast(`+${points} tokens earned!`);
+
+  // Update streak (only changes on first completion of the day)
+  const wasNewDay = state.streak.lastDate !== getTodayStr();
+  updateStreak();
+
+  // Streak bonus tokens
+  const bonus = getStreakBonus();
+  const totalEarned = points + bonus;
+
+  state.points += totalEarned;
+  state.totalXP = (state.totalXP || 0) + totalEarned;
+
+  // Check for level-up
+  const newLevel = getLevelInfo(state.totalXP).current.level;
+  if (newLevel > prevLevel) {
+    setTimeout(() => showLevelUpToast(getLevelInfo(state.totalXP)), 300);
+  }
+
+  // Toast message
+  if (bonus > 0 && wasNewDay) {
+    showToast(`🔥 Streak day ${state.streak.count}! +${totalEarned} tokens (+${bonus} bonus)`);
+  } else if (bonus > 0) {
+    showToast(`+${totalEarned} tokens (+${bonus} streak bonus)`);
+  } else {
+    showToast(`+${points} tokens earned!`);
+  }
+
   popPoints();
   saveState();
   render();
