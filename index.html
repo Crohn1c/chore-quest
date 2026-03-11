@@ -210,7 +210,7 @@
   }
 
   .chore-info { flex: 1; min-width: 0; }
-  .chore-name { font-size: 1rem; font-weight: 600; color: var(--text); }
+  .chore-name { font-size: 1rem; font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .chore-meta { font-size: 0.75rem; color: var(--text3); margin-top: 2px; }
 
   .chore-points {
@@ -877,12 +877,12 @@
 
           <!-- Task name + auto-suggest badge -->
           <div style="position:relative">
-            <input class="form-input" id="taskName" placeholder="Task name..." oninput="autoSuggestDiff()" />
+            <input class="form-input" id="taskName" placeholder="Task name..." oninput="autoSuggestDiff()" maxlength="60" />
             <div id="diffSuggestBadge" style="display:none;position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:0.65rem;font-family:'Share Tech Mono',monospace;padding:2px 7px;border-radius:10px;border:1px solid;cursor:pointer;transition:all 0.2s" title="Click to apply suggestion"></div>
           </div>
 
           <select class="form-select" id="taskDay">
-            <option value="">No specific day</option>
+            <option value="">Any day</option>
             <option value="Mon">Monday</option>
             <option value="Tue">Tuesday</option>
             <option value="Wed">Wednesday</option>
@@ -946,7 +946,7 @@
           <button class="manage-toggle" onclick="toggleManage()">⚙ Manage Rewards</button>
           <div class="manage-form" id="manageForm">
             <div class="form-row">
-              <input class="form-input" id="rewardName" placeholder="Reward name..." />
+              <input class="form-input" id="rewardName" placeholder="Reward name..." maxlength="50" />
             </div>
             <div class="form-row">
               <select class="form-select" id="rewardRarity">
@@ -1076,7 +1076,7 @@ function buildCompletions(choreDefs, customTasks, existing) {
 function defaultState() {
   const weekStart = getWeekStart();
   const completions = buildCompletions(CHORE_DEFS, []);
-  return { points: 0, completions, weekStart, rewards: DEFAULT_REWARDS, history: [], customTasks: [], taskDays: {} };
+  return { points: 0, completions, weekStart, rewards: DEFAULT_REWARDS, history: [], customTasks: [], taskDays: {}, hiddenBuiltins: [] };
 }
 
 function getWeekStart() {
@@ -1153,6 +1153,7 @@ function normalizeState(s) {
   s.history = Array.isArray(s.history) ? s.history : [];
   s.points = typeof s.points === 'number' ? s.points : 0;
   s.taskDays = (s.taskDays && typeof s.taskDays === 'object') ? s.taskDays : {};
+  s.hiddenBuiltins = Array.isArray(s.hiddenBuiltins) ? s.hiddenBuiltins : [];
 
   // Week boundary check — use string comparison to avoid timezone drift
   let savedWeek = '';
@@ -1176,18 +1177,25 @@ function normalizeState(s) {
 }
 
 // ---- AUTH HELPERS ----
-// Rate limiting - max 5 attempts per 15 min window
-const authAttempts = { count: 0, windowStart: Date.now() };
-
+// Rate limiting - max 5 attempts per 15 min window, persisted across refreshes
 function checkRateLimit() {
   const now = Date.now();
-  if (now - authAttempts.windowStart > 15 * 60 * 1000) {
-    authAttempts.count = 0;
-    authAttempts.windowStart = now;
+  const WINDOW = 15 * 60 * 1000;
+  let data = { count: 0, windowStart: now };
+  try {
+    const stored = localStorage.getItem('cq_ratelimit');
+    if (stored) data = JSON.parse(stored);
+  } catch(e) {}
+  if (now - data.windowStart > WINDOW) {
+    data = { count: 0, windowStart: now };
   }
-  if (authAttempts.count >= 5) return false;
-  authAttempts.count++;
-  return true;
+  if (data.count >= 5) {
+    const remaining = Math.ceil((WINDOW - (now - data.windowStart)) / 60000);
+    return { allowed: false, remaining };
+  }
+  data.count++;
+  try { localStorage.setItem('cq_ratelimit', JSON.stringify(data)); } catch(e) {}
+  return { allowed: true };
 }
 
 function sanitizeEmail(email) {
@@ -1296,8 +1304,9 @@ async function handleLogin() {
     return;
   }
 
-  if (!checkRateLimit()) {
-    errEl.textContent = 'Too many attempts. Please wait 15 minutes before trying again.';
+  const _rl1 = checkRateLimit();
+  if (!_rl1.allowed) {
+    errEl.textContent = `Too many attempts. Try again in ${_rl1.remaining} minute${_rl1.remaining !== 1 ? 's' : ''}.`;
     return;
   }
 
@@ -1368,8 +1377,9 @@ async function handleSignup() {
 
   if (hasError) return;
 
-  if (!checkRateLimit()) {
-    document.getElementById('signupGeneralError').textContent = 'Too many attempts. Please wait 15 minutes.';
+  const _rl2 = checkRateLimit();
+  if (!_rl2.allowed) {
+    document.getElementById('signupGeneralError').textContent = `Too many attempts. Try again in ${_rl2.remaining} min${_rl2.remaining !== 1 ? 's' : ''}.`;
     return;
   }
 
@@ -1412,8 +1422,9 @@ async function handleForgotPassword() {
   if (!email) { errEl.textContent = 'Please enter your email address.'; return; }
   if (!isValidEmail(email)) { errEl.textContent = 'Please enter a valid email address.'; return; }
 
-  if (!checkRateLimit()) {
-    errEl.textContent = 'Too many attempts. Please wait 15 minutes.';
+  const _rl3 = checkRateLimit();
+  if (!_rl3.allowed) {
+    errEl.textContent = `Too many attempts. Try again in ${_rl3.remaining} min${_rl3.remaining !== 1 ? 's' : ''}.`;
     return;
   }
 
@@ -1583,12 +1594,14 @@ function renderChores() {
     if (chore.repeatDays) {
       chore.repeatDays.forEach(day => {
         const key = chore.id + '_' + day;
-        allTasks.push({ chore, key, done: !!state.completions[key], day, fixed: true, deletable: false });
+        if (state.hiddenBuiltins.includes(key)) return;
+        allTasks.push({ chore, key, done: !!state.completions[key], day, fixed: true, deletable: true, builtinRepeatDay: day });
       });
     } else {
       const key = chore.id;
+      if (state.hiddenBuiltins.includes(key)) return;
       const day = state.taskDays[key] || null;
-      allTasks.push({ chore, key, done: !!state.completions[key], day, fixed: false, deletable: false });
+      allTasks.push({ chore, key, done: !!state.completions[key], day, fixed: false, deletable: true, builtinRepeatDay: null });
     }
   });
 
@@ -1624,7 +1637,7 @@ function renderChores() {
     header.className = 'day-section-header';
     header.textContent = dayNames[day];
     list.appendChild(header);
-    byDay[day].forEach(t => list.appendChild(makeChoreRow(t.chore, t.key, false, t.fixed ? t.day : null, t.deletable, t.fixed)));
+    byDay[day].forEach(t => list.appendChild(makeChoreRow(t.chore, t.key, false, t.fixed ? t.day : null, t.deletable, t.fixed, t.builtinRepeatDay)));
   });
 
   // Unscheduled
@@ -1634,7 +1647,7 @@ function renderChores() {
     header.className = 'day-section-header day-section-unscheduled';
     header.textContent = 'Unscheduled';
     list.appendChild(header);
-    unscheduled.forEach(t => list.appendChild(makeChoreRow(t.chore, t.key, false, null, t.deletable, false)));
+    unscheduled.forEach(t => list.appendChild(makeChoreRow(t.chore, t.key, false, null, t.deletable, false, t.builtinRepeatDay)));
   }
 
   if (!hasPending && !completed.length) {
@@ -1654,7 +1667,7 @@ function renderChores() {
 
     const compList = document.createElement('div');
     compList.id = 'completedList';
-    completed.forEach(t => compList.appendChild(makeChoreRow(t.chore, t.key, true, t.fixed ? t.day : null, false, t.fixed)));
+    completed.forEach(t => compList.appendChild(makeChoreRow(t.chore, t.key, true, t.fixed ? t.day : null, false, t.fixed, t.builtinRepeatDay)));
     list.appendChild(compList);
 
     compHeader.addEventListener('click', () => {
@@ -1665,7 +1678,7 @@ function renderChores() {
   }
 }
 
-function makeChoreRow(chore, key, done, fixedDayLabel, deletable, fixed) {
+function makeChoreRow(chore, key, done, fixedDayLabel, deletable, fixed, builtinRepeatDay) {
   const item = document.createElement('div');
   item.className = 'chore-item' + (done ? ' completed locked' : '');
 
@@ -1727,7 +1740,7 @@ function makeChoreRow(chore, key, done, fixedDayLabel, deletable, fixed) {
     sel.className = 'day-picker';
     sel.title = 'Schedule for a day';
     const currentDay = state.taskDays[chore.id] || '';
-    const dayOpts = [['','Any day'],['Mon','Mon'],['Tue','Tue'],['Wed','Wed'],['Thu','Thu'],['Fri','Fri'],['Sat','Sat'],['Sun','Sun']];
+    const dayOpts = [['','Any'],['Mon','Mon'],['Tue','Tue'],['Wed','Wed'],['Thu','Thu'],['Fri','Fri'],['Sat','Sat'],['Sun','Sun']];
     dayOpts.forEach(([val, label]) => {
       const opt = document.createElement('option');
       opt.value = val; opt.textContent = label;
@@ -1741,12 +1754,21 @@ function makeChoreRow(chore, key, done, fixedDayLabel, deletable, fixed) {
     item.appendChild(sel);
   }
 
-  // Delete button — only for custom, non-completed tasks
+  // Delete button — custom tasks and built-ins, non-completed only
   if (deletable && !done) {
     const del = document.createElement('button');
     del.className = 'task-del-btn';
     del.textContent = '×';
-    del.addEventListener('click', function(e) { e.stopPropagation(); deleteCustomTask(chore.id); });
+    del.addEventListener('click', function(e) {
+      e.stopPropagation();
+      if (builtinRepeatDay !== undefined && builtinRepeatDay !== null) {
+        deleteBuiltinTask(chore.id, builtinRepeatDay);
+      } else if (chore.id.startsWith('custom_')) {
+        deleteCustomTask(chore.id);
+      } else {
+        deleteBuiltinTask(chore.id, null);
+      }
+    });
     item.appendChild(del);
   }
 
@@ -1969,6 +1991,9 @@ function addCustomTask() {
   if (taskDay) state.taskDays[task.id] = taskDay;
 
   document.getElementById('taskName').value = '';
+  document.getElementById('taskDay').value = '';
+  document.getElementById('taskDiff').value = 'medium';
+  document.getElementById('taskCategory').value = 'Health';
   document.getElementById('taskCategoryCustom').value = '';
   document.getElementById('taskCategoryCustom').style.display = 'none';
 
@@ -2150,6 +2175,17 @@ function autoSuggestDiff() {
     badge.style.display = 'none';
     showToast(`Difficulty set to ${best}`);
   };
+}
+
+function deleteBuiltinTask(choreId, repeatDay) {
+  const key = repeatDay ? choreId + '_' + repeatDay : choreId;
+  // Track hidden built-ins in state
+  if (!state.hiddenBuiltins) state.hiddenBuiltins = [];
+  if (!state.hiddenBuiltins.includes(key)) state.hiddenBuiltins.push(key);
+  delete state.completions[key];
+  saveState();
+  render();
+  showToast('Task removed');
 }
 
 function toggleCategoryCustom() {
