@@ -989,12 +989,6 @@ if (_isRecoveryFlow) {
   window.history.replaceState(null, '', window.location.pathname);
 }
 
-document.addEventListener('DOMContentLoaded', function() {
-  if (typeof supabase === 'undefined') {
-    document.body.innerHTML = '<div style="color:#ef4444;font-family:sans-serif;padding:40px;text-align:center">Failed to load. Please check your connection and refresh.</div>';
-    return;
-  }
-
 // ---- SUPABASE ----
 const SUPABASE_URL = 'https://tbhspnbezkpqrpzfutvm.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRiaHNwbmJlemtwcXJwemZ1dHZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxMzg1MTcsImV4cCI6MjA4ODcxNDUxN30.vAOOfQfLJy5H0Olq46bxrGqSaWEbpDlY3z3vv8G_Ecw';
@@ -2270,20 +2264,14 @@ async function init() {
   });
 }
 
-init();
-
-  // Expose functions called from inline HTML attributes to global scope
-  const _expose = {
-    applyTemplate, addTemplateBundle, addCustomTask, autoSuggestDiff,
-    toggleCategoryCustom, addReward, deleteReward, roll,
-    handleLogout, handleLogin, handleSignup,
-    handleForgotPassword, handleResetPassword,
-    checkPasswordStrength, checkResetPasswordStrength,
-    toggleLoginView
-  };
-  Object.entries(_expose).forEach(([k, v]) => { window[k] = v; });
-
-}); // end DOMContentLoaded
+// Guard: if supabase failed to load, show error and stop
+if (typeof supabase === 'undefined') {
+  document.addEventListener('DOMContentLoaded', function() {
+    document.body.innerHTML = '<div style="color:#ef4444;font-family:sans-serif;padding:40px;text-align:center">Failed to load Supabase. Please check your connection and refresh.</div>';
+  });
+} else {
+  document.addEventListener('DOMContentLoaded', init);
+}
 </script>
 </body>
 </html>
