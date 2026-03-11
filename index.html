@@ -855,7 +855,32 @@
       <div class="panel" style="margin-top:16px">
         <div class="panel-title">Add Task</div>
         <div style="display:flex;flex-direction:column;gap:8px">
-          <input class="form-input" id="taskName" placeholder="Task name..." />
+
+          <!-- Template picker -->
+          <select class="form-select" id="taskTemplate" onchange="applyTemplate()">
+            <option value="">📋 Use a template...</option>
+            <option value="morning">🌅 Morning Routine</option>
+            <option value="evening">🌙 Evening Routine</option>
+            <option value="deepclean">🧹 Deep Clean</option>
+            <option value="admin">📋 Weekly Admin</option>
+            <option value="selfcare">💆 Self-care</option>
+          </select>
+
+          <!-- Template preview -->
+          <div id="templatePreview" style="display:none;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 12px;"></div>
+
+          <div style="display:flex;align-items:center;gap:6px;margin:2px 0">
+            <div style="flex:1;height:1px;background:var(--border)"></div>
+            <span style="font-size:0.65rem;color:var(--text3);letter-spacing:1px;text-transform:uppercase">or add one</span>
+            <div style="flex:1;height:1px;background:var(--border)"></div>
+          </div>
+
+          <!-- Task name + auto-suggest badge -->
+          <div style="position:relative">
+            <input class="form-input" id="taskName" placeholder="Task name..." oninput="autoSuggestDiff()" />
+            <div id="diffSuggestBadge" style="display:none;position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:0.65rem;font-family:'Share Tech Mono',monospace;padding:2px 7px;border-radius:10px;border:1px solid;cursor:pointer;transition:all 0.2s" title="Click to apply suggestion"></div>
+          </div>
+
           <select class="form-select" id="taskDay">
             <option value="">No specific day</option>
             <option value="Mon">Monday</option>
@@ -1958,6 +1983,172 @@ function deleteCustomTask(id) {
   saveState();
   render();
   showToast('Task removed');
+}
+
+// ---- TEMPLATES ----
+const TEMPLATES = {
+  morning: {
+    label: 'Morning Routine',
+    tasks: [
+      { name: 'Make bed',          diff: 'easy',   category: 'Personal', icon: '🛏️' },
+      { name: 'Brush teeth',       diff: 'easy',   category: 'Health',   icon: '🦷' },
+      { name: 'Shower',            diff: 'easy',   category: 'Health',   icon: '🚿' },
+      { name: 'Eat breakfast',     diff: 'easy',   category: 'Health',   icon: '🍳' },
+      { name: 'Take medication',   diff: 'easy',   category: 'Health',   icon: '💊' },
+    ]
+  },
+  evening: {
+    label: 'Evening Routine',
+    tasks: [
+      { name: 'Tidy living room',  diff: 'easy',   category: 'Personal', icon: '🛋️' },
+      { name: 'Prepare tomorrow',  diff: 'easy',   category: 'Personal', icon: '📅' },
+      { name: 'Wind-down stretch', diff: 'easy',   category: 'Health',   icon: '🧘' },
+      { name: 'Skincare',          diff: 'easy',   category: 'Health',   icon: '🧴' },
+    ]
+  },
+  deepclean: {
+    label: 'Deep Clean',
+    tasks: [
+      { name: 'Vacuum all rooms',  diff: 'hard',   category: 'Personal', icon: '🧹' },
+      { name: 'Mop floors',        diff: 'medium', category: 'Personal', icon: '🪣' },
+      { name: 'Clean bathroom',    diff: 'hard',   category: 'Personal', icon: '🚿' },
+      { name: 'Wipe surfaces',     diff: 'medium', category: 'Personal', icon: '🧽' },
+      { name: 'Clean windows',     diff: 'medium', category: 'Personal', icon: '🪟' },
+      { name: 'Take out recycling',diff: 'easy',   category: 'Personal', icon: '♻️' },
+    ]
+  },
+  admin: {
+    label: 'Weekly Admin',
+    tasks: [
+      { name: 'Check bank account',diff: 'easy',   category: 'Finance',  icon: '💳' },
+      { name: 'Clear email inbox', diff: 'medium', category: 'Work',     icon: '📧' },
+      { name: 'Pay pending bills', diff: 'medium', category: 'Finance',  icon: '💶' },
+      { name: 'Review to-do list', diff: 'easy',   category: 'Work',     icon: '📋' },
+    ]
+  },
+  selfcare: {
+    label: 'Self-care',
+    tasks: [
+      { name: 'Go for a walk',     diff: 'easy',   category: 'Health',   icon: '🚶' },
+      { name: 'Drink 2L water',    diff: 'easy',   category: 'Health',   icon: '💧' },
+      { name: 'Read for 20 min',   diff: 'easy',   category: 'Hobby',    icon: '📖' },
+      { name: 'No screens 1hr before bed', diff: 'medium', category: 'Health', icon: '📵' },
+    ]
+  }
+};
+
+function applyTemplate() {
+  const key = document.getElementById('taskTemplate').value;
+  const preview = document.getElementById('templatePreview');
+  if (!key) { preview.style.display = 'none'; return; }
+
+  const tpl = TEMPLATES[key];
+  const pointMap = { easy: 1, medium: 3, hard: 5 };
+
+  preview.style.display = '';
+  preview.innerHTML = `
+    <div style="font-size:0.7rem;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">
+      ${tpl.label} — ${tpl.tasks.length} tasks
+    </div>
+    <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:10px">
+      ${tpl.tasks.map(t => `
+        <div style="display:flex;align-items:center;gap:8px;font-size:0.82rem">
+          <span>${t.icon}</span>
+          <span style="flex:1;color:var(--text)">${t.name}</span>
+          <span style="font-size:0.68rem;color:var(--text3)">${t.category}</span>
+          <span class="chore-points ${ {easy:'diff-easy',medium:'diff-medium',hard:'diff-hard'}[t.diff] }" style="font-size:0.68rem;padding:2px 6px">+${pointMap[t.diff]}✦</span>
+        </div>
+      `).join('')}
+    </div>
+    <button class="add-btn" onclick="addTemplateBundle('${key}')" style="width:100%;justify-content:center;font-size:0.85rem;padding:8px">
+      + Add All ${tpl.tasks.length} Tasks
+    </button>
+  `;
+}
+
+function addTemplateBundle(key) {
+  const tpl = TEMPLATES[key];
+  const pointMap = { easy: 1, medium: 3, hard: 5 };
+  let added = 0;
+
+  tpl.tasks.forEach(t => {
+    // Skip if an identical task name already exists in custom tasks
+    const exists = state.customTasks.some(ct => ct.name.toLowerCase() === t.name.toLowerCase());
+    if (exists) return;
+
+    const task = {
+      id: 'custom_' + Date.now() + '_' + added,
+      name: t.name,
+      diff: t.diff,
+      points: pointMap[t.diff],
+      category: t.category,
+      icon: t.icon
+    };
+    state.customTasks.push(task);
+    state.completions[task.id] = false;
+    added++;
+  });
+
+  // Reset template picker and preview
+  document.getElementById('taskTemplate').value = '';
+  document.getElementById('templatePreview').style.display = 'none';
+
+  saveState();
+  render();
+  showToast(`${added} task${added !== 1 ? 's' : ''} added!`);
+}
+
+// ---- AUTO-SUGGEST DIFFICULTY ----
+const DIFF_KEYWORDS = {
+  easy: [
+    'brush','shower','bed','drink','water','medication','pill','vitamin','read','walk',
+    'tidy','sort','email','check','log','note','call','text','quick','small','simple','light'
+  ],
+  medium: [
+    'laundry','cook','meal','prep','grocery','shop','clean','wipe','mop','iron','review',
+    'pay','bill','budget','plan','organize','write','report','moderate','meeting','vacuum'
+  ],
+  hard: [
+    'deep','scrub','move','repair','fix','build','assemble','paint','install','declutter',
+    'renovate','overhaul','full','complete','heavy','taxes','filing','project','presentation'
+  ]
+};
+
+function autoSuggestDiff() {
+  const input = document.getElementById('taskName').value.toLowerCase().trim();
+  const badge = document.getElementById('diffSuggestBadge');
+
+  if (!input || input.length < 3) { badge.style.display = 'none'; return; }
+
+  let best = null;
+  let bestCount = 0;
+
+  ['hard','medium','easy'].forEach(diff => {
+    const hits = DIFF_KEYWORDS[diff].filter(kw => input.includes(kw)).length;
+    if (hits > bestCount) { bestCount = hits; best = diff; }
+  });
+
+  // Fallback: if no keywords matched, guess from length/words
+  if (!best) {
+    const words = input.split(/\s+/).length;
+    best = words >= 4 ? 'medium' : 'easy';
+    bestCount = 0;
+  }
+
+  const colors = { easy: 'var(--green)', medium: 'var(--gold)', hard: 'var(--red)' };
+  const labels = { easy: 'Easy?', medium: 'Medium?', hard: 'Hard?' };
+
+  badge.style.display = '';
+  badge.style.color = colors[best];
+  badge.style.borderColor = colors[best];
+  badge.style.background = 'var(--bg2)';
+  badge.textContent = labels[best];
+  badge.title = `Suggested: ${best} — click to apply`;
+  badge.onclick = () => {
+    document.getElementById('taskDiff').value = best;
+    badge.style.display = 'none';
+    showToast(`Difficulty set to ${best}`);
+  };
 }
 
 function toggleCategoryCustom() {
