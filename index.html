@@ -575,6 +575,60 @@
     animation: shimmer 2s linear infinite;
   }
 
+  /* ---- DAY SECTIONS & LOCK ---- */
+  .day-section-header {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text2);
+    padding: 14px 2px 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 6px;
+    user-select: none;
+  }
+
+  .day-section-header:first-child { padding-top: 0; }
+  .day-section-unscheduled { color: var(--text3); }
+  .day-section-completed { color: var(--green); opacity: 0.7; margin-top: 8px; }
+
+  .chore-item.locked {
+    opacity: 0.42;
+    cursor: default;
+    pointer-events: none;
+  }
+
+  .chore-item.locked .chore-checkbox {
+    background: var(--green);
+    border-color: var(--green);
+    color: white;
+  }
+
+  .chore-item.locked .chore-name {
+    text-decoration: line-through;
+    color: var(--text3);
+  }
+
+  .day-picker {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text3);
+    border-radius: 5px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.68rem;
+    padding: 3px 5px;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: border-color 0.15s;
+    max-width: 68px;
+  }
+
+  .day-picker:focus { outline: none; border-color: var(--border2); }
+  .day-picker option { background: var(--bg2); }
+
   /* ---- MOBILE ---- */
   @media (max-width: 640px) {
     .app { padding: 12px 12px 80px; }
@@ -646,6 +700,9 @@
 
     /* Toast: wider on mobile */
     .toast { width: calc(100% - 32px); text-align: center; white-space: normal; bottom: 16px; }
+
+    .day-picker { max-width: 58px; font-size: 0.62rem; }
+    .day-section-header { font-size: 0.65rem; letter-spacing: 1px; padding-top: 12px; }
   }
 
   /* Tablet: keep side-by-side but tighter sidebar */
@@ -799,6 +856,16 @@
         <div class="panel-title">Add Task</div>
         <div style="display:flex;flex-direction:column;gap:8px">
           <input class="form-input" id="taskName" placeholder="Task name..." />
+          <select class="form-select" id="taskDay">
+            <option value="">No specific day</option>
+            <option value="Mon">Monday</option>
+            <option value="Tue">Tuesday</option>
+            <option value="Wed">Wednesday</option>
+            <option value="Thu">Thursday</option>
+            <option value="Fri">Friday</option>
+            <option value="Sat">Saturday</option>
+            <option value="Sun">Sunday</option>
+          </select>
           <div class="form-row">
             <select class="form-select" id="taskDiff">
               <option value="easy">Easy (+1✦)</option>
@@ -978,7 +1045,7 @@ function buildCompletions(choreDefs, customTasks, existing) {
 function defaultState() {
   const weekStart = getWeekStart();
   const completions = buildCompletions(CHORE_DEFS, []);
-  return { points: 0, completions, weekStart, rewards: DEFAULT_REWARDS, history: [], customTasks: [] };
+  return { points: 0, completions, weekStart, rewards: DEFAULT_REWARDS, history: [], customTasks: [], taskDays: {} };
 }
 
 function getWeekStart() {
@@ -1054,6 +1121,7 @@ function normalizeState(s) {
   s.rewards = Array.isArray(s.rewards) && s.rewards.length ? s.rewards : DEFAULT_REWARDS;
   s.history = Array.isArray(s.history) ? s.history : [];
   s.points = typeof s.points === 'number' ? s.points : 0;
+  s.taskDays = (s.taskDays && typeof s.taskDays === 'object') ? s.taskDays : {};
 
   // Week boundary check — use string comparison to avoid timezone drift
   let savedWeek = '';
@@ -1477,81 +1545,130 @@ function renderChores() {
   const list = document.getElementById('choreList');
   list.innerHTML = '';
 
-  // --- Built-in tasks under "Household" header ---
-  const builtInHeader = document.createElement('div');
-  builtInHeader.className = 'category-header';
-  builtInHeader.innerHTML = '<span class="cat-icon">🏠</span> Household';
-  list.appendChild(builtInHeader);
+  // Collect all tasks with their render metadata
+  const allTasks = [];
 
   CHORE_DEFS.forEach(chore => {
     if (chore.repeatDays) {
       chore.repeatDays.forEach(day => {
         const key = chore.id + '_' + day;
-        const done = state.completions[key] || false;
-        list.appendChild(makeChoreRow(chore, key, done, day, false));
+        allTasks.push({ chore, key, done: !!state.completions[key], day, fixed: true, deletable: false });
       });
     } else {
-      const done = state.completions[chore.id] || false;
-      list.appendChild(makeChoreRow(chore, chore.id, done, null, false));
+      const key = chore.id;
+      const day = state.taskDays[key] || null;
+      allTasks.push({ chore, key, done: !!state.completions[key], day, fixed: false, deletable: false });
     }
   });
 
-  // --- Custom tasks grouped by category ---
-  if (state.customTasks.length) {
-    const cats = {};
-    state.customTasks.forEach(t => {
-      const cat = t.category || 'Other';
-      if (!cats[cat]) cats[cat] = [];
-      cats[cat].push(t);
-    });
+  state.customTasks.forEach(t => {
+    const day = state.taskDays[t.id] || null;
+    allTasks.push({ chore: t, key: t.id, done: !!state.completions[t.id], day, fixed: false, deletable: true });
+  });
 
-    const catIcons = {
-      'Health': '💪', 'Work': '💼', 'Personal': '🧘', 'Finance': '💳',
-      'Social': '👥', 'Hobby': '🎮', 'Other': '📌'
-    };
+  const pending = allTasks.filter(t => !t.done);
+  const completed = allTasks.filter(t => t.done);
 
-    Object.entries(cats).forEach(([cat, tasks]) => {
-      const header = document.createElement('div');
-      header.className = 'category-header';
-      header.innerHTML = `<span class="cat-icon">${catIcons[cat] || '📌'}</span> ${cat}`;
-      list.appendChild(header);
+  // Group pending by day
+  const dayOrder = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const dayNames = { Mon:'Monday', Tue:'Tuesday', Wed:'Wednesday', Thu:'Thursday', Fri:'Friday', Sat:'Saturday', Sun:'Sunday' };
+  const byDay = {};
+  const unscheduled = [];
 
-      tasks.forEach(t => {
-        const done = state.completions[t.id] || false;
-        list.appendChild(makeChoreRow(t, t.id, done, null, true));
-      });
+  pending.forEach(t => {
+    if (t.day) {
+      if (!byDay[t.day]) byDay[t.day] = [];
+      byDay[t.day].push(t);
+    } else {
+      unscheduled.push(t);
+    }
+  });
+
+  // Render day sections (only days that have tasks)
+  let hasPending = false;
+  dayOrder.forEach(day => {
+    if (!byDay[day] || !byDay[day].length) return;
+    hasPending = true;
+    const header = document.createElement('div');
+    header.className = 'day-section-header';
+    header.textContent = dayNames[day];
+    list.appendChild(header);
+    byDay[day].forEach(t => list.appendChild(makeChoreRow(t.chore, t.key, false, t.fixed ? t.day : null, t.deletable, t.fixed)));
+  });
+
+  // Unscheduled
+  if (unscheduled.length) {
+    hasPending = true;
+    const header = document.createElement('div');
+    header.className = 'day-section-header day-section-unscheduled';
+    header.textContent = 'Unscheduled';
+    list.appendChild(header);
+    unscheduled.forEach(t => list.appendChild(makeChoreRow(t.chore, t.key, false, null, t.deletable, false)));
+  }
+
+  if (!hasPending && !completed.length) {
+    const empty = document.createElement('div');
+    empty.style.cssText = 'color:var(--text3);font-size:0.85rem;text-align:center;padding:20px 0';
+    empty.textContent = 'No tasks yet — add one below!';
+    list.appendChild(empty);
+  }
+
+  // Completed section
+  if (completed.length) {
+    const compHeader = document.createElement('div');
+    compHeader.className = 'day-section-header day-section-completed';
+    compHeader.style.cursor = 'pointer';
+    compHeader.innerHTML = `<span id="completedToggleIcon">▾</span> Completed (${completed.length})`;
+    list.appendChild(compHeader);
+
+    const compList = document.createElement('div');
+    compList.id = 'completedList';
+    completed.forEach(t => compList.appendChild(makeChoreRow(t.chore, t.key, true, t.fixed ? t.day : null, false, t.fixed)));
+    list.appendChild(compList);
+
+    compHeader.addEventListener('click', () => {
+      const isOpen = compList.style.display !== 'none';
+      compList.style.display = isOpen ? 'none' : '';
+      document.getElementById('completedToggleIcon').textContent = isOpen ? '▸' : '▾';
     });
   }
 }
 
-function makeChoreRow(chore, key, done, dayLabel, deletable) {
+function makeChoreRow(chore, key, done, fixedDayLabel, deletable, fixed) {
   const item = document.createElement('div');
-  item.className = 'chore-item' + (done ? ' completed' : '');
+  item.className = 'chore-item' + (done ? ' completed locked' : '');
 
   const diffClass = { easy: 'diff-easy', medium: 'diff-medium', hard: 'diff-hard' }[chore.diff] || 'diff-easy';
-  const diffLabel = chore.diff ? (chore.diff.charAt(0).toUpperCase() + chore.diff.slice(1) + ' · ') : '';
+  const diffLabel = chore.diff ? (chore.diff.charAt(0).toUpperCase() + chore.diff.slice(1)) : '';
   const catLabel = chore.category || '';
-  const metaText = diffLabel + catLabel;
+  const metaText = [diffLabel, catLabel].filter(Boolean).join(' · ');
 
-  // Checkbox
+  // Checkbox — clickable only when not done
   const cb = document.createElement('div');
   cb.className = 'chore-checkbox';
-  cb.textContent = done ? '✓' : '';
-  cb.addEventListener('click', function() { toggleChore(key, chore.points); });
+  if (done) {
+    cb.textContent = '✓';
+    cb.title = 'Completed';
+  } else {
+    cb.style.cursor = 'pointer';
+    cb.addEventListener('click', function() { toggleChore(key, chore.points); });
+  }
 
   // Info block
   const info = document.createElement('div');
   info.className = 'chore-info';
-  info.style.cursor = 'pointer';
-  info.addEventListener('click', function() { toggleChore(key, chore.points); });
+  if (!done) {
+    info.style.cursor = 'pointer';
+    info.addEventListener('click', function() { toggleChore(key, chore.points); });
+  }
 
   const nameEl = document.createElement('div');
   nameEl.className = 'chore-name';
   nameEl.textContent = (chore.icon || '📌') + ' ' + chore.name;
-  if (dayLabel) {
+  if (fixedDayLabel) {
     const span = document.createElement('span');
-    span.style.cssText = 'font-size:0.75rem;color:var(--text3)';
-    span.textContent = ' (' + dayLabel + ')';
+    span.style.cssText = 'font-size:0.72rem;color:var(--text3);margin-left:4px';
+    span.textContent = '(' + fixedDayLabel + ')';
     nameEl.appendChild(span);
   }
   info.appendChild(nameEl);
@@ -1567,13 +1684,34 @@ function makeChoreRow(chore, key, done, dayLabel, deletable) {
   const pts = document.createElement('div');
   pts.className = 'chore-points ' + diffClass;
   pts.style.cursor = 'default';
-  pts.textContent = '+' + chore.points + '✦';
+  pts.textContent = (done ? '' : '+') + chore.points + '✦';
 
   item.appendChild(cb);
   item.appendChild(info);
   item.appendChild(pts);
 
-  if (deletable) {
+  // Day picker — only for pending, non-fixed tasks
+  if (!done && !fixed) {
+    const sel = document.createElement('select');
+    sel.className = 'day-picker';
+    sel.title = 'Schedule for a day';
+    const currentDay = state.taskDays[chore.id] || '';
+    const dayOpts = [['','Any day'],['Mon','Mon'],['Tue','Tue'],['Wed','Wed'],['Thu','Thu'],['Fri','Fri'],['Sat','Sat'],['Sun','Sun']];
+    dayOpts.forEach(([val, label]) => {
+      const opt = document.createElement('option');
+      opt.value = val; opt.textContent = label;
+      if (val === currentDay) opt.selected = true;
+      sel.appendChild(opt);
+    });
+    sel.addEventListener('change', function(e) {
+      e.stopPropagation();
+      moveTask(chore.id, e.target.value);
+    });
+    item.appendChild(sel);
+  }
+
+  // Delete button — only for custom, non-completed tasks
+  if (deletable && !done) {
     const del = document.createElement('button');
     del.className = 'task-del-btn';
     del.textContent = '×';
@@ -1653,15 +1791,17 @@ function renderHistory() {
 
 // ---- ACTIONS ----
 function toggleChore(key, points) {
-  const wasDone = state.completions[key];
-  state.completions[key] = !wasDone;
-  if (!wasDone) {
-    state.points += points;
-    showToast(`+${points} tokens earned!`);
-    popPoints();
-  } else {
-    state.points = Math.max(0, state.points - points);
-  }
+  if (state.completions[key]) return; // locked once done
+  state.completions[key] = true;
+  state.points += points;
+  showToast(`+${points} tokens earned!`);
+  popPoints();
+  saveState();
+  render();
+}
+
+function moveTask(taskId, day) {
+  state.taskDays[taskId] = day || null;
   saveState();
   render();
 }
@@ -1782,6 +1922,8 @@ function addCustomTask() {
     'Social': '👥', 'Hobby': '🎮', 'Other': '📌'
   };
 
+  const taskDay = document.getElementById('taskDay').value || null;
+
   const task = {
     id: 'custom_' + Date.now(),
     name,
@@ -1793,6 +1935,7 @@ function addCustomTask() {
 
   state.customTasks.push(task);
   state.completions[task.id] = false;
+  if (taskDay) state.taskDays[task.id] = taskDay;
 
   document.getElementById('taskName').value = '';
   document.getElementById('taskCategoryCustom').value = '';
@@ -1804,13 +1947,9 @@ function addCustomTask() {
 }
 
 function deleteCustomTask(id) {
-  // If task was completed, deduct its points first
-  if (state.completions[id]) {
-    const task = state.customTasks.find(t => t.id === id);
-    if (task) state.points = Math.max(0, state.points - task.points);
-  }
   state.customTasks = state.customTasks.filter(t => t.id !== id);
   delete state.completions[id];
+  delete state.taskDays[id];
   saveState();
   render();
   showToast('Task removed');
